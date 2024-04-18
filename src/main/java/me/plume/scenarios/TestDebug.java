@@ -22,5 +22,5 @@ public class TestDebug extends Scenario {
 		world.markers.add(d);
 		world.markers.add(h);
 	}
-	public void tick(long last, long now, double dt) {}
+	public void tick(double time, double dt) {}
 }

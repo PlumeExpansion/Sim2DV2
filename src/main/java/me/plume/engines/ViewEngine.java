@@ -10,19 +10,20 @@ import javafx.scene.paint.Color;
 public class ViewEngine {
 	static final int FPS_N = 10;
 	static final double SCALE_FACTOR = 1.1;
-	static final int MAX_FPS = 120;
+	static final double FRAME_DEL = 1.0/60;
+	static final double DEFAULT_SCALE = 10;
 	Launcher launcher;
 	Scene scene;
 	GraphicsContext c;
 	AnimationTimer timer;
 	double offsetX, offsetY;
 	double ox, oy, ix, iy, os;
-	double scale = 1;
+	double scale = DEFAULT_SCALE;
 	boolean mcs;
 	public ViewEngine(Launcher instance) {
 		launcher = instance;
-		offsetX = Launcher.WIDTH/2;
-		offsetY = -Launcher.HEIGHT/2;
+		offsetX = Launcher.WIDTH/2/DEFAULT_SCALE;
+		offsetY = -Launcher.HEIGHT/2/DEFAULT_SCALE;
 		scene = launcher.scene;
 		c = launcher.c;
 		scene.widthProperty().addListener((obv, ov, nv) -> {
@@ -68,42 +69,15 @@ public class ViewEngine {
 			if (keyHandler != null) keyHandler.handle(e);
 			if (e.getCode() == KeyCode.M) mcs = !mcs;
 			if (e.getCode() == KeyCode.DECIMAL) {
-				scale = 1;
-				offsetX = scene.getWidth()/2;
-				offsetY = -scene.getHeight()/2;
+				scale = DEFAULT_SCALE;
+				offsetX = scene.getWidth()/2/DEFAULT_SCALE;
+				offsetY = -scene.getHeight()/2/DEFAULT_SCALE;
 				render();
 			}
 		});
 		render();
 	}
-	long last, dt;
-	double fpsSum;
-	int fpsN;
-	public void start() {
-		if (timer != null) return;
-		timer = new AnimationTimer() {
-			public void handle(long now) {
-				if (last == 0) {
-					last = now;
-					return;
-				}
-				dt = now-last;
-				if (dt < 1E9/MAX_FPS) return;
-				fpsSum += 1E9/dt;
-				fpsN++;
-				if (fpsN >= FPS_N) {
-					launcher.window.setTitle(launcher.window.getTitle().split(" - ")[0]+" - "+(int) (fpsSum/fpsN)+" fps");
-					fpsN = 0;
-					fpsSum = 0;
-				}
-				launcher.world.requestMarkers();
-				last = now;
-			}
-		};
-		timer.start();
-	}
 	public void render() {
-		if (launcher.world.requested) return;
 		Platform.runLater(() -> {
 			c.setFill(Color.BLACK);
 			c.fillRect(0, 0, scene.getWidth(), scene.getHeight());

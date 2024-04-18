@@ -17,5 +17,5 @@ public abstract class Scenario {
 		world = launcher.world;
 	}
 	public abstract void init();
-	public abstract void tick(long last, long now, double dt);
+	public abstract void tick(double time, double dt);
 }

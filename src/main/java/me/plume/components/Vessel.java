@@ -19,7 +19,7 @@ public abstract class Vessel {
 	public int getId() {
 		return id;
 	}
-	public abstract void update(long last, long now, double dt);
+	public abstract void update(double time, double dt);
 	public abstract Marker mark();
 	public static Vessel getVessel(int id) {
 		return vessels.get(id);

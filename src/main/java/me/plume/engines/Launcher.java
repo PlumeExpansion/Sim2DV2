@@ -36,7 +36,6 @@ public class Launcher extends Application {
 		scenario.init();
 		view = new ViewEngine(this);
 		if (runWorld) world.start();
-		if (runView) view.start();
 		
 		this.window = window;
 		window.setTitle("Sim2DV2 - ");
