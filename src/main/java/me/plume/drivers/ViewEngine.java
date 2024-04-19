@@ -1,5 +1,6 @@
 package me.plume.drivers;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -105,7 +106,11 @@ public class ViewEngine {
 					offsetY = -scene.getHeight()/2/scale-trackMark.y;
 				}
 			}
-			launcher.world.markers.stream().forEach(m -> m.render(c, (m.x+offsetX)*scale, -(m.y+offsetY)*scale, scale));
+			Iterator<Marker> itrt = launcher.world.markers.iterator();
+			while (itrt.hasNext()) {
+				Marker m = itrt.next();
+				m.render(c, (m.x+offsetX)*scale, -(m.y+offsetY)*scale, scale);
+			}
 		});
 	}
 }

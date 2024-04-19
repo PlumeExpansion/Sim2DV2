@@ -17,6 +17,7 @@ public class Missile extends Vessel {
 	static final double MIN_SCALE = 3;
 	static final double MIN_SCALE_WIDTH = 2;
 	static final double VELOCITY_SCALAR = 0.1;
+	static final double EXPLOSION_R_MIN = 5;
 	static final double EXPLOSION_R_MAX = 100;
 	static final double EXPLOSION_TIME = 1;
 	static final Color EXPLOSION_COLOR = Color.LIGHTGOLDENRODYELLOW;
@@ -61,7 +62,7 @@ public class Missile extends Vessel {
 		vy = Math.sin(angle)*v;
 	}
 	public void onRemove(double time, double dt) {
-		Explosion exp = new Explosion(x, y, size, EXPLOSION_R_MAX, time, EXPLOSION_TIME, EXPLOSION_COLOR);
+		Explosion exp = new Explosion(x, y, EXPLOSION_R_MIN, EXPLOSION_R_MAX, time, EXPLOSION_TIME, EXPLOSION_COLOR);
 		exp.vx = vx*EXPLOSION_V_FACTOR;
 		exp.vy = vy*EXPLOSION_V_FACTOR;
 		world.effects.add(exp);

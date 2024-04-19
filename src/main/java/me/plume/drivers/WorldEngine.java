@@ -12,9 +12,7 @@ import me.plume.components.Marker;
 import me.plume.components.Vessel;
 
 public class WorldEngine {
-	static final double DELAY = 0.01;
-	static final int TRIAL_N = (int) (ViewEngine.FRAME_DEL/DELAY);
-	static final double TRIAL_R = ViewEngine.FRAME_DEL%DELAY;
+	static final double MAX_STEP_DIST = 3;
 	Launcher launcher;
 	public List<Vessel> vessels = Collections.synchronizedList(new LinkedList<>());
 	public List<Vessel> exclusiveColliders = Collections.synchronizedList(new LinkedList<>());
@@ -25,39 +23,61 @@ public class WorldEngine {
 	public WorldEngine(Launcher instance) {
 		launcher = instance;
 	}
-	long now, lastFrame;
-	double dtF, fpsSum;
-	int fpsN, fps;
+	long now, frameHold, lastFrame, lastUpdate;
+	double dtF, fpsSum, buffer;
+	int fpsN, fps, frameN, updateCount;
 	double time;
+	double delay, remainder, maxV, vel;
 	boolean waiting;
 	public void start() {
 		thread = new Thread(() -> {
 			while (!terminated) {
+				now = System.currentTimeMillis();
 				if (!waiting) {
-					for (int i = 0; i < TRIAL_N; i++) update(DELAY);
-					update(TRIAL_R);
+					maxV=0;
+					Arrays.asList(vessels, exclusiveColliders).forEach(list -> list.forEach(v -> {
+						vel = Math.sqrt(v.vx*v.vx + v.vy*v.vy);
+						if (vel > maxV) maxV = vel;
+					}));
+					delay = ViewEngine.FRAME_DEL;
+					if (maxV!=0 && MAX_STEP_DIST / maxV < ViewEngine.FRAME_DEL) {
+						delay = MAX_STEP_DIST / maxV;
+						updateCount = (int) (ViewEngine.FRAME_DEL / delay);
+						remainder = ViewEngine.FRAME_DEL % delay;
+						for (int i = 0; i < updateCount; i++) update(delay);
+						update(remainder);
+					} else update(ViewEngine.FRAME_DEL);
+					buffer = (now-lastUpdate)/1000.0;
+					lastUpdate = now;
 					waiting=true;
 				}
-				now = System.currentTimeMillis();
-				dtF = (double) (now-lastFrame)/1000;
-				if (dtF < ViewEngine.FRAME_DEL) continue;
-				waiting=false;
-				lastFrame = now;
-				fpsSum+=1.0/dtF;
-				fpsN++;
-				if (fpsN >= ViewEngine.FPS_N) {
-					fps = (int)fpsSum/fpsN;
-					fpsSum=0;
-					fpsN=0;
-					Platform.runLater(() -> {
-						launcher.window.setTitle(Launcher.TITLE+" - "+launcher.view.scale+" - "+fps+" - "+launcher.view.trackId);
-					});
+				if (frameHold == 0) frameHold = now;
+				if (frameN <= (now-frameHold)/1000.0/ViewEngine.FRAME_DEL) {
+					frameN++;
+					dtF = (double) (now-lastFrame)/1000;
+					waiting=false;
+					lastFrame = now;
+					fpsSum+=1.0/dtF;
+					fpsN++;
+					if (fpsN >= ViewEngine.FPS_N) {
+						fps = (int)fpsSum/fpsN;
+						fpsSum=0;
+						fpsN=0;
+						Platform.runLater(() -> {
+							launcher.window.setTitle(Launcher.TITLE
+									+" - scale: "+(int) (launcher.view.scale*100)/100.0
+									+" - fps: "+fps
+									+" - updateCount: "+updateCount
+									+" - buffer: "+buffer
+									+" - trackId: "+launcher.view.trackId);
+						});
+					}
+					markers = markers.stream().filter(m -> m.getId()<0).collect(Collectors.toList());
+					markers.addAll(exclusiveColliders.stream().map(v -> v.mark()).collect(Collectors.toList()));
+					markers.addAll(vessels.stream().map(v -> v.mark()).collect(Collectors.toList()));
+					markers.addAll(effects.stream().map(v -> v.mark()).collect(Collectors.toList()));
+					launcher.view.render();
 				}
-				markers = markers.stream().filter(m -> m.getId()<0).collect(Collectors.toList());
-				markers.addAll(exclusiveColliders.stream().map(v -> v.mark()).collect(Collectors.toList()));
-				markers.addAll(vessels.stream().map(v -> v.mark()).collect(Collectors.toList()));
-				markers.addAll(effects.stream().map(v -> v.mark()).collect(Collectors.toList()));
-				launcher.view.render();
 			}
 		});
 		thread.start();
