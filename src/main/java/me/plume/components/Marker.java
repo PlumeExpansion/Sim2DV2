@@ -2,7 +2,7 @@ package me.plume.components;
 
 import javafx.scene.canvas.GraphicsContext;
 
-public abstract class Marker {
+public abstract class Marker { 
 	private int id;
 	public double x, y;
 	public Marker(int id, double x, double y) {
