@@ -9,6 +9,7 @@ public abstract class Vessel {
 	public double vx, vy;
 	public boolean remove;
 	public boolean immune;
+	public double r;
 	public Vessel(double x, double y) {
 		this.x = x;
 		this.y = y;

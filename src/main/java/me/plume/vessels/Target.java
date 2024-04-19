@@ -13,7 +13,6 @@ public class Target extends Vessel {
 	public static final double ACCEL = 70;
 	static final double MIN_SCALE = 2;
 	static final double MIN_SCALE_WIDTH = 2;
-	double r;
 	Color color;
 	public Color status;
 	public boolean left, right, up, down;

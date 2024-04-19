@@ -21,18 +21,20 @@ public class Missile extends Vessel {
 	static final double EXPLOSION_R_MAX = 100;
 	static final double EXPLOSION_TIME = 1;
 	static final Color EXPLOSION_COLOR = Color.LIGHTGOLDENRODYELLOW;
-	static final double COLLISION_R_BUFFER = 0.5;
-	static final double PROXY_R = 1.5;
+	static final double PROXY_R = 2;
 	static final double EXPLOSION_V_FACTOR = 0.1;
+	static final double ARMING_PERIOD = 3;
 	Color color;
 	Target target;
 	public Navigator navigator;
 	public double angle, v;
 	double size;
 	double spawn, life;
+	boolean armed;
 	WorldEngine world;
 	public Missile(double x, double y, double size, double spawn, double life, Target target, Color c, WorldEngine world) {
 		super(x, y);
+		this.r = size;
 		this.size = size;
 		this.spawn = spawn;
 		this.life = life;
@@ -43,14 +45,17 @@ public class Missile extends Vessel {
 	}
 	public void update(double time, double dt) {
 		if (remove) return;
-		if (time-spawn>=life) remove = true;;
+		if (time-spawn>=life) remove = true;
+		if (!armed && time-spawn>=ARMING_PERIOD) {
+			armed=true;
+		}
 		world.vessels.stream().filter(v -> v!= this).forEach(v -> {
-			if (dist(v)>size+PROXY_R) return;
+			if (dist(v)>r+v.r+(armed? PROXY_R : 0)) return;
 			remove = true;
 			if (!v.immune) v.remove = true;
 		});
 		world.exclusiveColliders.forEach(v -> {
-			if (dist(v)>size+COLLISION_R_BUFFER) return;
+			if (dist(v)>r+v.r) return;
 			remove = true;
 			v.remove = true;
 		});

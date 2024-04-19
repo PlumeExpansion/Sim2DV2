@@ -23,6 +23,7 @@ public class FusedShell extends Vessel {
 		this.vx = vx;
 		this.vy = vy;
 		this.world = world;
+		this.r = R;
 	}
 	public void update(double time, double dt) {
 		if (time-spawn >= life) remove = true;
