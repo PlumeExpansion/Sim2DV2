@@ -7,7 +7,6 @@ import javafx.scene.paint.Color;
 import me.plume.components.Scenario;
 import me.plume.components.Vessel;
 import me.plume.drivers.Launcher;
-import me.plume.vessels.FusedShell;
 import me.plume.vessels.Missile;
 import me.plume.vessels.Target;
 import me.plume.vessels.navigation.LeadIntercept;
@@ -15,22 +14,24 @@ import me.plume.vessels.navigation.LeadIntercept;
 public class MissileTargetTrack extends Scenario {
 	static final double TRACK_DIST = 50;
 	static final double SPAWN_DELAY = 0.1;
-	static final double SHOOT_DELAY = 1.0/(4500/60);
-	static final double SHOOT_VELOCITY = 1100;
-	static final double SHOT_RECOIL = 1;
-	static final double SHOT_LIFE = 2;
 	static final double TRACK_SWITCH_HOLD = 0.4;
 	static final double TRACK_SWITCH_DELAY = 0.1;
+	
+	static final double SHOT_LIFE = 2;
+	static final double SHOT_RECOIL = 1;
+	static final double SHOOT_DELAY = 1.0/(4500/60);
+	static final double SHOOT_VELOCITY = 1100;
+	static final double DISPERSION = Math.toRadians(0.5);
 	Target target;
 	public MissileTargetTrack(Launcher instance) {
 		super(instance);
 		launcher.runWorld = true;
 	}
 	double sx, sy, x, y;
-	boolean fire, shoot, track, breaking, next, prev, autobreak;
+	boolean fire, track, breaking, next, prev, autobreak;
 	int trackN=-1;
 	public void init() {
-		target = new Target(0, 0, 5, Color.CYAN);
+		target = new Target(0, 0, 5, Color.CYAN, world);
 		scene.setOnMouseMoved(e -> {
 			logMouseCoord(e);
 		});
@@ -40,11 +41,7 @@ public class MissileTargetTrack extends Scenario {
 		});
 		scene.setOnMousePressed(e -> {
 			if (e.getClickCount() == 2 && e.getButton() == MouseButton.PRIMARY) track(e);
-			if (e.getClickCount() == 1 && e.getButton() == MouseButton.PRIMARY) {
-				shoot = true;
-				shootHold = 0;
-				shot = 0;
-			}
+			if (e.getClickCount() == 1 && e.getButton() == MouseButton.PRIMARY) if (!target.turret.auto) target.turret.shoot(true);
 			if (e.getButton() == MouseButton.SECONDARY) {
 				fire = true;
 				fireHold = 0;
@@ -52,8 +49,8 @@ public class MissileTargetTrack extends Scenario {
 			}
 		});
 		scene.setOnMouseReleased(e -> {
-			if (e.getButton() == MouseButton.PRIMARY)  shoot = false;
-			if (e.getButton() == MouseButton.SECONDARY)  fire = false;
+			if (e.getButton() == MouseButton.PRIMARY) if (!target.turret.auto) target.turret.shoot(false);
+			if (e.getButton() == MouseButton.SECONDARY) fire = false;
 		});
 		scene.setOnKeyPressed(e -> {
 			KeyCode code = e.getCode();
@@ -62,6 +59,7 @@ public class MissileTargetTrack extends Scenario {
 			if (code == KeyCode.A) target.left = true;
 			if (code == KeyCode.S) target.down = true;
 			if (code == KeyCode.D) target.right = true;
+			if (code == KeyCode.C) target.turret.auto = !target.turret.auto;
 			if (code == KeyCode.B) {
 				autobreak = !autobreak;
 				if (autobreak && !breaking && !target.up && !target.left && !target.down && !target.right) breaking = true;
@@ -140,14 +138,14 @@ public class MissileTargetTrack extends Scenario {
 		else target.status = null;
 		if (breaking) target.status = Color.SALMON;
 	}
-	double fireHold, shootHold;
-	int fired, shot;
+	double fireHold;
+	int fired;
 	double switchHold;
 	int switchN;
 	public void tick(double time, double dt) {
 		x = sx/view.scale-view.offsetX;
 		y = -sy/view.scale-view.offsetY;
-		target.angle = Math.atan2(y-target.y, x-target.x);
+		if (!target.turret.auto) target.turret.angle((view.trackId != null && target.getId() == view.trackId)? Math.atan2(-sy+scene.getHeight()/2, sx-scene.getWidth()/2): Math.atan2(y-target.y, x-target.x));
 		if (fire) {
 			if (fireHold == 0) fireHold = time;
 			if (fired <= (time-fireHold)/SPAWN_DELAY) {
@@ -156,20 +154,6 @@ public class MissileTargetTrack extends Scenario {
 						Missile.SIZE, time, Missile.LIFE, target, Color.RED, world);
 				m.navigator = new LeadIntercept(m, target);
 				world.vessels.add(m);
-			}
-		}
-		if (shoot) {
-			if (shootHold == 0) shootHold = time;
-			if (shot <= (time-shootHold)/SHOOT_DELAY) {
-				shot++;
-				FusedShell s = new FusedShell(
-						target.x+(Target.BARREL_LENGTH+target.r/Math.sqrt(3))*Math.cos(target.angle), 
-						target.y+(Target.BARREL_LENGTH+target.r/Math.sqrt(3))*Math.sin(target.angle), 
-						target.vx+SHOOT_VELOCITY*Math.cos(target.angle), 
-						target.vy+SHOOT_VELOCITY*Math.sin(target.angle), time, SHOT_LIFE, world);
-				target.vx -= SHOT_RECOIL*Math.cos(target.angle);
-				target.vy -= SHOT_RECOIL*Math.sin(target.angle);
-				world.exclusiveColliders.add(s);
 			}
 		}
 		if (breaking) {

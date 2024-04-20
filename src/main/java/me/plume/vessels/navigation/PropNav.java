@@ -18,7 +18,7 @@ public class PropNav extends Navigator {
 	public void tick(double time, double dt) {
 		dx = target.x-missile.x;
 		dy = target.y-missile.y;
-		angleLOS = Missile.posRad(Math.atan2(dy, dx));
+		angleLOS = Navigator.posRad(Math.atan2(dy, dx));
 		dist = Math.sqrt(dx*dx+dy*dy);
 		if (running) {
 			vClosing = (dist-distPrev)/dtPrev;

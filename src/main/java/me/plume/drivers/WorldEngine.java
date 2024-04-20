@@ -71,8 +71,8 @@ public class WorldEngine {
 					});
 				}
 				markers = markers.stream().filter(m -> m.getId()<0).collect(Collectors.toList());
-				markers.addAll(exclusiveColliders.stream().map(v -> v.mark()).collect(Collectors.toList()));
 				markers.addAll(vessels.stream().map(v -> v.mark()).collect(Collectors.toList()));
+				markers.addAll(exclusiveColliders.stream().map(v -> v.mark()).collect(Collectors.toList()));
 				markers.addAll(effects.stream().map(v -> v.mark()).collect(Collectors.toList()));
 				launcher.view.render();
 			}

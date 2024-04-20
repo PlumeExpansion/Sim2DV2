@@ -10,8 +10,8 @@ public class PurePursuit extends Navigator {
 	double theta, angle;
 	public void tick(double time, double dt) {
 		theta = Math.atan2(target.y-missile.y, target.x-missile.x);
-		theta = Missile.posRad(theta);
-		angle = Missile.posRad(missile.angle);
+		theta = Navigator.posRad(theta);
+		angle = Navigator.posRad(missile.angle);
 		if (Math.abs(theta-angle) <= Missile.MAX_ROT_RATE*dt) angle=theta;
 		if (angle<theta) {
 			if (theta-angle>Math.PI) angle-=Missile.MAX_ROT_RATE*dt;

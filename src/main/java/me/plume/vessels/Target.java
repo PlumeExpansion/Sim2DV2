@@ -8,28 +8,34 @@ import javafx.scene.paint.Stop;
 import me.plume.components.Marker;
 import me.plume.components.Vessel;
 import me.plume.components.markers.Dot;
-import me.plume.components.markers.Heading;
+import me.plume.drivers.WorldEngine;
+import me.plume.modules.CIWSTurret;
 
 public class Target extends Vessel {
+	static final double SHOT_LIFE = 2;
+	static final double SHOT_DELAY = 1.0/(4500/60);
+	static final double SHOT_VELOCITY = 1100;
+	static final double DISPERSION = Math.toRadians(0.5);
 	public static final double ACCEL = 70;
 	static final double MIN_SCALE = 2;
 	static final double MIN_SCALE_WIDTH = 2;
-	public static final double BARREL_LENGTH = 4;
 	Color color;
 	public Color status;
-	public double angle;
 	public boolean left, right, up, down;
-	public Target(double x, double y, double r, Color c) {
+	public CIWSTurret turret;
+	public Target(double x, double y, double r, Color c, WorldEngine world) {
 		super(x, y);
 		this.r = r;
 		this.color = c;
 		immune = true;
+		turret = new CIWSTurret(this, world, SHOT_DELAY, SHOT_VELOCITY, SHOT_LIFE, DISPERSION);
 	}
 	public void update(double time, double dt) {
 		if (left) vx-=ACCEL*dt;
 		if (right) vx+=ACCEL*dt;
 		if (up) vy+=ACCEL*dt;
 		if (down) vy-=ACCEL*dt;
+		turret.update(time, dt);
 	}
 	public void onRemove(double time, double dt) {}
 	public Marker mark() {
@@ -45,14 +51,9 @@ class TargetMarker extends Dot {
 	Target t;
 	double w, l;
 	double minScaleR, statusR;
-	Heading heading;
 	public TargetMarker(int id, double x, double y, Target target) {
 		super(id, x, y, target.r, target.color);
 		t = target;
-		heading = new Heading(id, x, y, target.r, target.color);
-		heading.length = Target.BARREL_LENGTH;
-		heading.angle = t.angle;
-		heading.scale = true;
 		scale = true;
 		w = r/2;
 		l = w*7+r*0.75;
@@ -83,10 +84,10 @@ class TargetMarker extends Dot {
 			c.fillRect(-w/2*s+x, -l*s+y, w*s, l*s);
 		}
 		super.render(c, x, y, s);
-		heading.render(c, x, y, s);
 		if (t.status != null) {
 			c.setFill(t.status);
 			c.fillOval(x-statusR*s, y-statusR*s, statusR*2*s, statusR*2*s);
 		}
+		t.turret.render(c, x, y, s);
 	}
 }

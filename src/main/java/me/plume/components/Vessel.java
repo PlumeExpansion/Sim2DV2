@@ -10,6 +10,7 @@ public abstract class Vessel {
 	private int id;
 	public double x, y;
 	public double vx, vy;
+	public double hitpoints, damage;
 	public boolean remove;
 	public boolean immune;
 	public double r;

@@ -11,4 +11,8 @@ public abstract class Navigator {
 		target = vessel;
 	}
 	public abstract void tick(double time, double dt);
+	public static double posRad(double rad) {
+		rad %= 2*Math.PI;
+		return rad>0? rad : rad+2*Math.PI;
+	}
 }

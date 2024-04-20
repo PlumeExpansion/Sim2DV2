@@ -14,4 +14,10 @@ public abstract class Marker {
 		return id;
 	}
 	public abstract void render(GraphicsContext c, double x, double y, double s);
+	public static double x(double x, double y, double angle) {
+		return x*Math.cos(angle)-y*Math.sin(angle);
+	}
+	public static double y(double x, double y, double angle) {
+		return -x*Math.sin(angle)-y*Math.cos(angle);
+	}
 }

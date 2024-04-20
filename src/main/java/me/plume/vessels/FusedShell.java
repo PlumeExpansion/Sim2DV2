@@ -9,14 +9,16 @@ import me.plume.drivers.WorldEngine;
 
 public class FusedShell extends Vessel {
 	static final double R = 0.2;
-	static final double EXPLOSION_R_MAX = 10;
+	static final double EXPLOSION_R_MAX = 5;
 	static final double EXPLOSION_TIME = 0.2;
 	static final double MIN_SCALE = 10;
 	static final double MIN_SCALE_WIDTH = 2;
 	static final double MIN_SCALE_R = R*1.5;
 	static final Color C = Color.ORANGE;
-	static final Color EXPLOSION_COLOR = Color.LIGHTGOLDENRODYELLOW;
+	static final Color EXPLOSION_COLOR = Color.DARKORANGE;
 	static final double EXPLOSION_V_FACTOR = 0.1;
+	static final double HIT_POINTS = 1;
+	static final double DAMAGE = 10;
 	double spawn;
 	double life;
 	WorldEngine world;
@@ -28,16 +30,20 @@ public class FusedShell extends Vessel {
 		this.vy = vy;
 		this.world = world;
 		this.r = R;
+		this.hitpoints = HIT_POINTS;
+		this.damage = DAMAGE;
 	}
 	public void update(double time, double dt) {
+		if (remove) return;
+		if (hitpoints <= 0) remove = true;
 		if (time-spawn >= life) remove = true;
 	}
 	public void onRemove(double time, double dt) {
-		Explosion exp = new Explosion(x, y, R, EXPLOSION_R_MAX, time, EXPLOSION_TIME, EXPLOSION_COLOR);
+		Explosion exp = new Explosion(x, y, this.r, EXPLOSION_R_MAX, time, EXPLOSION_TIME, EXPLOSION_COLOR);
 		exp.vx = vx*EXPLOSION_V_FACTOR;
 		exp.vy = vy*EXPLOSION_V_FACTOR;
 		world.effects.add(exp);
-	};
+	}
 	public Marker mark() {
 		return new FusedShellMarker(getId(), x, y, R, C);
 	}

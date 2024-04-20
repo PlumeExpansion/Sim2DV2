@@ -29,9 +29,9 @@ public class Heading extends Marker {
 				new double[] {y(lx, -w/2)*s+y, y(lx, w/2)*s+y, y(lx+length, w/2)*s+y, y(lx+length, -w/2)*s+y}, 4);
 	}
 	private double x(double x, double y) {
-		return x*Math.cos(angle)-y*Math.sin(angle);
+		return Marker.x(x, y, angle);
 	}
 	private double y(double x, double y) {
-		return -x*Math.sin(angle)-y*Math.cos(angle);
+		return Marker.y(x, y, angle);
 	}
 }

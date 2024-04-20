@@ -25,6 +25,8 @@ public class Missile extends Vessel {
 	static final double PROXY_R = 2;
 	static final double EXPLOSION_V_FACTOR = 0.1;
 	static final double ARMING_PERIOD = 3;
+	static final double HIT_POINTS = 7;
+	static final double DAMAGE = 50;
 	Color color;
 	Target target;
 	public Navigator navigator;
@@ -43,27 +45,32 @@ public class Missile extends Vessel {
 		this.color = c;
 		angle = Math.atan2(target.y-y, target.x-x);
 		this.world = world;
+		this.hitpoints = HIT_POINTS;
+		this.damage = DAMAGE;
 	}
 	public void update(double time, double dt) {
 		if (remove) return;
+		if (hitpoints <= 0) remove = true;
 		if (time-spawn>=life) remove = true;
 		if (!armed && time-spawn>=ARMING_PERIOD) {
 			armed=true;
 		}
 		world.vessels.stream().filter(v -> v!= this).forEach(v -> {
 			if (dist(v)>r+v.r+(armed? PROXY_R : 0)) return;
-			remove = true;
+			hitpoints -= v.damage;
 			v.vx += vx*VELOCITY_IMPARTED_SCALAR;
 			v.vy += vy*VELOCITY_IMPARTED_SCALAR;
-			if (!v.immune) v.remove = true;
+			if (!v.immune) v.hitpoints -= DAMAGE;
+			else remove = true;
 		});
 		world.exclusiveColliders.forEach(v -> {
 			if (dist(v)>r+v.r) return;
-			remove = true;
+			hitpoints -= v.damage;
 			v.vx += vx*VELOCITY_IMPARTED_SCALAR;
 			v.vy += vy*VELOCITY_IMPARTED_SCALAR;
-			v.remove = true;
+			v.hitpoints -= damage;
 		});
+		if (hitpoints <= 0) remove = true;
 		if (time-spawn<=BURN_TIME) v += ACCEL*dt;
 		
 		if (navigator != null) navigator.tick(time, dt);
@@ -79,10 +86,6 @@ public class Missile extends Vessel {
 	}
 	public Marker mark() {
 		return new MissileMarker(getId(), x, y, this);
-	}
-	public static double posRad(double rad) {
-		rad %= 2*Math.PI;
-		return rad>0? rad : rad+2*Math.PI;
 	}
 }
 class MissileMarker extends Heading {
