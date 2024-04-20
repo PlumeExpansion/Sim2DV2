@@ -7,6 +7,7 @@ import javafx.scene.paint.Color;
 import me.plume.components.Scenario;
 import me.plume.components.Vessel;
 import me.plume.drivers.Launcher;
+import me.plume.vessels.FusedShell;
 import me.plume.vessels.Missile;
 import me.plume.vessels.Target;
 import me.plume.vessels.navigation.LeadIntercept;
@@ -14,6 +15,10 @@ import me.plume.vessels.navigation.LeadIntercept;
 public class MissileTargetTrack extends Scenario {
 	static final double TRACK_DIST = 50;
 	static final double SPAWN_DELAY = 0.1;
+	static final double SHOOT_DELAY = 1.0/(4500/60);
+	static final double SHOOT_VELOCITY = 1100;
+	static final double SHOT_RECOIL = 1;
+	static final double SHOT_LIFE = 2;
 	static final double TRACK_SWITCH_HOLD = 0.4;
 	static final double TRACK_SWITCH_DELAY = 0.1;
 	Target target;
@@ -21,8 +26,8 @@ public class MissileTargetTrack extends Scenario {
 		super(instance);
 		launcher.runWorld = true;
 	}
-	double x, y;
-	boolean fire, track, breaking, next, prev;
+	double sx, sy, x, y;
+	boolean fire, shoot, track, breaking, next, prev, autobreak;
 	int trackN=-1;
 	public void init() {
 		target = new Target(0, 0, 5, Color.CYAN);
@@ -30,10 +35,16 @@ public class MissileTargetTrack extends Scenario {
 			logMouseCoord(e);
 		});
 		scene.setOnMouseDragged(e -> {
+			if (e.getButton() == MouseButton.PRIMARY) logMouseCoord(e);
 			if (e.getButton() == MouseButton.SECONDARY) logMouseCoord(e);
 		});
 		scene.setOnMousePressed(e -> {
 			if (e.getClickCount() == 2 && e.getButton() == MouseButton.PRIMARY) track(e);
+			if (e.getClickCount() == 1 && e.getButton() == MouseButton.PRIMARY) {
+				shoot = true;
+				shootHold = 0;
+				shot = 0;
+			}
 			if (e.getButton() == MouseButton.SECONDARY) {
 				fire = true;
 				fireHold = 0;
@@ -41,6 +52,7 @@ public class MissileTargetTrack extends Scenario {
 			}
 		});
 		scene.setOnMouseReleased(e -> {
+			if (e.getButton() == MouseButton.PRIMARY)  shoot = false;
 			if (e.getButton() == MouseButton.SECONDARY)  fire = false;
 		});
 		scene.setOnKeyPressed(e -> {
@@ -50,6 +62,11 @@ public class MissileTargetTrack extends Scenario {
 			if (code == KeyCode.A) target.left = true;
 			if (code == KeyCode.S) target.down = true;
 			if (code == KeyCode.D) target.right = true;
+			if (code == KeyCode.B) {
+				autobreak = !autobreak;
+				if (autobreak && !breaking && !target.up && !target.left && !target.down && !target.right) breaking = true;
+				if (!autobreak && breaking) breakCheck(false);
+			}
 			if (code == KeyCode.TAB) {
 				if (next) return;
 				next = true;
@@ -75,6 +92,9 @@ public class MissileTargetTrack extends Scenario {
 			if (code == KeyCode.A) target.left = false;
 			if (code == KeyCode.S) target.down = false;
 			if (code == KeyCode.D) target.right = false;
+			if (autobreak && (code == KeyCode.W || code == KeyCode.A || code == KeyCode.S || code == KeyCode.D)) {
+				breaking = !target.up && !target.left && !target.down && !target.right;
+			}
 			if (code == KeyCode.TAB) next = false;
 			if (code == KeyCode.SHIFT) prev = false;
 		});
@@ -103,8 +123,8 @@ public class MissileTargetTrack extends Scenario {
 		view.trackId = world.vessels.get(trackN).getId();
 	}
 	private void logMouseCoord(MouseEvent e) {
-		x = e.getSceneX();
-		y = e.getSceneY();
+		sx = e.getSceneX();
+		sy = e.getSceneY();
 	}
 	private void breakCheck(boolean breaking) {
 		this.breaking = breaking;
@@ -116,16 +136,42 @@ public class MissileTargetTrack extends Scenario {
 		}
 	}
 	private void statusCheck() {
-		if (target.up || target.left || target.right || target.down) 
-			target.status = breaking? Color.SALMON : Color.CORNFLOWERBLUE;
+		if (target.up || target.left || target.right || target.down) target.status = Color.CORNFLOWERBLUE;
 		else target.status = null;
+		if (breaking) target.status = Color.SALMON;
 	}
-	double fireHold;
-	int fired;
+	double fireHold, shootHold;
+	int fired, shot;
 	double switchHold;
 	int switchN;
 	public void tick(double time, double dt) {
-		statusCheck();
+		x = sx/view.scale-view.offsetX;
+		y = -sy/view.scale-view.offsetY;
+		target.angle = Math.atan2(y-target.y, x-target.x);
+		if (fire) {
+			if (fireHold == 0) fireHold = time;
+			if (fired <= (time-fireHold)/SPAWN_DELAY) {
+				fired++;
+				Missile m = new Missile(x, y, 
+						Missile.SIZE, time, Missile.LIFE, target, Color.RED, world);
+				m.navigator = new LeadIntercept(m, target);
+				world.vessels.add(m);
+			}
+		}
+		if (shoot) {
+			if (shootHold == 0) shootHold = time;
+			if (shot <= (time-shootHold)/SHOOT_DELAY) {
+				shot++;
+				FusedShell s = new FusedShell(
+						target.x+(Target.BARREL_LENGTH+target.r/Math.sqrt(3))*Math.cos(target.angle), 
+						target.y+(Target.BARREL_LENGTH+target.r/Math.sqrt(3))*Math.sin(target.angle), 
+						target.vx+SHOOT_VELOCITY*Math.cos(target.angle), 
+						target.vy+SHOOT_VELOCITY*Math.sin(target.angle), time, SHOT_LIFE, world);
+				target.vx -= SHOT_RECOIL*Math.cos(target.angle);
+				target.vy -= SHOT_RECOIL*Math.sin(target.angle);
+				world.exclusiveColliders.add(s);
+			}
+		}
 		if (breaking) {
 			if (Math.abs(target.vx) <= Target.ACCEL*dt) target.vx=0;
 			if (Math.abs(target.vy) <= Target.ACCEL*dt) target.vy=0;
@@ -134,16 +180,7 @@ public class MissileTargetTrack extends Scenario {
 			target.up = target.vy<0;
 			target.down = target.vy>0;
 		}
-		if (fire) {
-			if (fireHold == 0) fireHold = time;
-			if (fired <= (time-fireHold)/SPAWN_DELAY) {
-				fired++;
-				Missile m = new Missile(x/view.scale-view.offsetX, -y/view.scale-view.offsetY, 
-						Missile.SIZE, time, Missile.LIFE, target, Color.RED, world);
-				m.navigator = new LeadIntercept(m, target);
-				world.vessels.add(m);
-			}
-		}
+		statusCheck();
 		if (next || prev) {
 			if (switchN == 0) {
 				switchHold = time+TRACK_SWITCH_HOLD;

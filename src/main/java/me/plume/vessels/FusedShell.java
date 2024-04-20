@@ -1,5 +1,6 @@
 package me.plume.vessels;
 
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import me.plume.components.Marker;
 import me.plume.components.Vessel;
@@ -7,9 +8,12 @@ import me.plume.components.markers.Dot;
 import me.plume.drivers.WorldEngine;
 
 public class FusedShell extends Vessel {
+	static final double R = 0.2;
 	static final double EXPLOSION_R_MAX = 10;
 	static final double EXPLOSION_TIME = 0.2;
-	static final double R = 0.2;
+	static final double MIN_SCALE = 10;
+	static final double MIN_SCALE_WIDTH = 2;
+	static final double MIN_SCALE_R = R*1.5;
 	static final Color C = Color.ORANGE;
 	static final Color EXPLOSION_COLOR = Color.LIGHTGOLDENRODYELLOW;
 	static final double EXPLOSION_V_FACTOR = 0.1;
@@ -35,8 +39,21 @@ public class FusedShell extends Vessel {
 		world.effects.add(exp);
 	};
 	public Marker mark() {
-		Dot d = new Dot(getId(), x, y, R, C);
-		d.scale = true;
-		return d;
+		return new FusedShellMarker(getId(), x, y, R, C);
+	}
+}
+class FusedShellMarker extends Dot {
+	public FusedShellMarker(int id, double x, double y, double r, Color c) {
+		super(id, x, y, r, c);
+		scale = true;
+	}
+	public void render(GraphicsContext c, double x, double y, double s) {
+		if (s<FusedShell.MIN_SCALE) {
+			s = FusedShell.MIN_SCALE;
+			c.setStroke(Color.YELLOW);
+			c.setLineWidth(FusedShell.MIN_SCALE_WIDTH);
+			c.strokeOval(x-FusedShell.MIN_SCALE_R*s, y-FusedShell.MIN_SCALE_R*s, FusedShell.MIN_SCALE_R*2*s, FusedShell.MIN_SCALE_R*2*s);
+		}
+		super.render(c, x, y, s);
 	}
 }

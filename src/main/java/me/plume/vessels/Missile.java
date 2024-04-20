@@ -17,6 +17,7 @@ public class Missile extends Vessel {
 	static final double MIN_SCALE = 3;
 	static final double MIN_SCALE_WIDTH = 2;
 	static final double VELOCITY_SCALAR = 0.1;
+	static final double VELOCITY_IMPARTED_SCALAR = 0.1;
 	static final double EXPLOSION_R_MIN = 5;
 	static final double EXPLOSION_R_MAX = 100;
 	static final double EXPLOSION_TIME = 1;
@@ -52,11 +53,15 @@ public class Missile extends Vessel {
 		world.vessels.stream().filter(v -> v!= this).forEach(v -> {
 			if (dist(v)>r+v.r+(armed? PROXY_R : 0)) return;
 			remove = true;
+			v.vx += vx*VELOCITY_IMPARTED_SCALAR;
+			v.vy += vy*VELOCITY_IMPARTED_SCALAR;
 			if (!v.immune) v.remove = true;
 		});
 		world.exclusiveColliders.forEach(v -> {
 			if (dist(v)>r+v.r) return;
 			remove = true;
+			v.vx += vx*VELOCITY_IMPARTED_SCALAR;
+			v.vy += vy*VELOCITY_IMPARTED_SCALAR;
 			v.remove = true;
 		});
 		if (time-spawn<=BURN_TIME) v += ACCEL*dt;

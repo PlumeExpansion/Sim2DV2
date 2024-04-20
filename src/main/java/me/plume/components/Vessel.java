@@ -1,22 +1,24 @@
 package me.plume.components;
 
-import java.util.LinkedHashMap;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class Vessel {
-	public static final LinkedHashMap<Integer, Vessel> vessels = new LinkedHashMap<>();
+	public static final Map<Integer, Vessel> vessels = Collections.synchronizedMap(new HashMap<>());
 	private int id;
 	public double x, y;
 	public double vx, vy;
 	public boolean remove;
 	public boolean immune;
 	public double r;
+	public static AtomicInteger counter = new AtomicInteger(0);
 	public Vessel(double x, double y) {
 		this.x = x;
 		this.y = y;
-		int n = 0;
-		while (vessels.containsKey(n)) n++;
-		id = n;
-		vessels.put(n, this);
+		this.id = counter.getAndIncrement();
+		vessels.put(this.id, this);
 	}
 	public int getId() {
 		return id;

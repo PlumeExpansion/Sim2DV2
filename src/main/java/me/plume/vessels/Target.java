@@ -8,13 +8,16 @@ import javafx.scene.paint.Stop;
 import me.plume.components.Marker;
 import me.plume.components.Vessel;
 import me.plume.components.markers.Dot;
+import me.plume.components.markers.Heading;
 
 public class Target extends Vessel {
 	public static final double ACCEL = 70;
 	static final double MIN_SCALE = 2;
 	static final double MIN_SCALE_WIDTH = 2;
+	public static final double BARREL_LENGTH = 4;
 	Color color;
 	public Color status;
+	public double angle;
 	public boolean left, right, up, down;
 	public Target(double x, double y, double r, Color c) {
 		super(x, y);
@@ -42,9 +45,14 @@ class TargetMarker extends Dot {
 	Target t;
 	double w, l;
 	double minScaleR, statusR;
+	Heading heading;
 	public TargetMarker(int id, double x, double y, Target target) {
 		super(id, x, y, target.r, target.color);
 		t = target;
+		heading = new Heading(id, x, y, target.r, target.color);
+		heading.length = Target.BARREL_LENGTH;
+		heading.angle = t.angle;
+		heading.scale = true;
 		scale = true;
 		w = r/2;
 		l = w*7+r*0.75;
@@ -75,6 +83,7 @@ class TargetMarker extends Dot {
 			c.fillRect(-w/2*s+x, -l*s+y, w*s, l*s);
 		}
 		super.render(c, x, y, s);
+		heading.render(c, x, y, s);
 		if (t.status != null) {
 			c.setFill(t.status);
 			c.fillOval(x-statusR*s, y-statusR*s, statusR*2*s, statusR*2*s);
