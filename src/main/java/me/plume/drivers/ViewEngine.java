@@ -107,9 +107,7 @@ public class ViewEngine {
 			}
 			try {
 				launcher.world.markers.forEach(m -> m.render(c, (m.x+offsetX)*scale, -(m.y+offsetY)*scale, scale));
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			} catch (Exception e) {}
 		});
 	}
 }

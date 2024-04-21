@@ -10,11 +10,11 @@ public abstract class Turret extends VesselModule {
 	public double maxAngleRate = 2*Math.PI;
 	public double minAngle = 0, maxAngle = 2*Math.PI;
 	public WorldEngine world;
-	public Vessel vessel;
-	protected double theta, angle, delay;
+	private double theta, angle;
+	protected double delay;
 	protected boolean shoot;
-	private double shootHold;
-	private int shot;
+	protected double shootHold;
+	protected int shot;
 	public Turret(Vessel vessel, WorldEngine world, double delay) {
 		super(vessel);
 		this.world = world;
@@ -25,11 +25,11 @@ public abstract class Turret extends VesselModule {
 			if (shootHold == 0) shootHold = time;
 			if (shot <= (time-shootHold)/delay) {
 				shot++;
-				shoot();
+				shoot(time, dt);
 			}
 		}
 	}
-	protected abstract void shoot();
+	protected abstract void shoot(double time, double dt);
 	public void shoot(boolean shoot) {
 		if (shoot) {
 			if (this.shoot) return;
@@ -66,5 +66,7 @@ public abstract class Turret extends VesselModule {
 			if (angle<theta) angle += maxAngleRate*dt;
 		}
 	}
+	public double getTheta() {return theta;}
+	public double getAngle() {return angle;}
 	public abstract void render(GraphicsContext c, double x, double y, double s);
 }
