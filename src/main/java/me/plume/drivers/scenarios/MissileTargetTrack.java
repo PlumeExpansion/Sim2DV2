@@ -145,7 +145,11 @@ public class MissileTargetTrack extends Scenario {
 	public void tick(double time, double dt) {
 		x = sx/view.scale-view.offsetX;
 		y = -sy/view.scale-view.offsetY;
-		if (!target.turret.auto) target.turret.angle((view.trackId != null && target.getId() == view.trackId)? Math.atan2(-sy+scene.getHeight()/2, sx-scene.getWidth()/2): Math.atan2(y-target.y, x-target.x));
+		target.turret.targets = world.vessels;
+		if (!target.turret.auto) target.turret.angle(
+				(view.trackId != null && target.getId() == view.trackId)? 
+						Math.atan2(-sy+scene.getHeight()/2, sx-scene.getWidth()/2): 
+							Math.atan2(y-target.y, x-target.x), dt);
 		if (fire) {
 			if (fireHold == 0) fireHold = time;
 			if (fired <= (time-fireHold)/SPAWN_DELAY) {

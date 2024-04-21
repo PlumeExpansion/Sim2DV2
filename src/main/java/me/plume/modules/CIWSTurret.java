@@ -8,14 +8,14 @@ import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
 import me.plume.components.Marker;
-import me.plume.components.Module;
+import me.plume.components.VesselModule;
 import me.plume.components.Vessel;
 import me.plume.drivers.WorldEngine;
 import me.plume.vessels.FusedShell;
 import me.plume.vessels.ProxyShell;
 import me.plume.vessels.navigation.Navigator;
 
-public class CIWSTurret extends Module {
+public class CIWSTurret extends VesselModule {
 	Stop[] stops;
 	public Color ammoColor = Color.DIMGRAY;
 	public Color bridgeColor = Color.GRAY;
@@ -43,10 +43,11 @@ public class CIWSTurret extends Module {
 	public double minScaleWidth = 2;
 	public double minScaleR = 1.5;
 	WorldEngine world;
-	public double maxTraverse = Math.toRadians(115);
+	public double maxAngleRate = Math.toRadians(115);
 	public double minAngle = 0, maxAngle = 2*Math.PI;
+	public double minShootingAngleDiff = Math.toRadians(15);
 	double targetRad;
-	private double angle;
+	private double theta, angle;
 	double delay, velocity, life, dispersion;
 	private boolean shoot;
 	public boolean auto;
@@ -64,25 +65,91 @@ public class CIWSTurret extends Module {
 	double shootHold;
 	int shot;
 	boolean thrusting;
-	double rad, rvx, rvy, rx, ry;
+	double xb, yb, xm, ym;
+	double rad, vrx, vry, vr;
+	double m, b, dx, dti, dxit, dyit, dot;
+	double dxa1t, dya1t, dxa2t, dya2t, dta;
+	double xa1, ya1, xa2, ya2, d1, d2, xa, ya, xi, yi;
+	double A, B, C, k, Ad, Bd, Cd, Aa, Ba, Ca, discrim;
+	double incptScore, score;
 	public void update(double time, double dt) {
 		if (auto && targets != null) {
-			for (Vessel v : targets) {
-				rx = v.x - (vessel.x+ox);
-				ry = v.y - (vessel.y+oy);
-				rvx = v.vx - vessel.vx;
-				rvy = v.vy - vessel.vy;
-				//TODO finish autotrack
+			incptScore = -1;
+			xb = vessel.x + ox;
+			yb = vessel.y + oy;
+			for (Vessel t : targets) {
+				if (t.getId() == vessel.getId()) continue;
+				xm = t.x;
+				ym = t.y;
+				vrx = t.vx - vessel.vx;
+				vry = t.vy - vessel.vy;
+				vr = Math.sqrt(vrx*vrx + vry*vry);
+				
+				m=vry/vrx;
+				b = ym - m*xm;
+				
+				A = vry;
+				B = -vrx;
+				C = vrx*ym - vry*xm;
+				Ad = -vrx;
+				Bd = -vry;
+				Cd = vry*yb+vrx*xb;
+				k = 1/(A*Bd - B*Ad);
+				
+				dx = Math.abs(A*xb+B*yb+C)/Math.sqrt(A*A+B*B);
+				xi = k*(B*Cd - C*Bd);
+				yi = k*(C*Ad - A*Cd);
+				dxit = xi-xm;
+				dyit = yi-ym;
+				dti = Math.sqrt(dxit*dxit + dyit*dyit)/vr;
+				dot = dxit*vrx + dyit*vry;
+				
+				score = (dx+dti)*Math.signum(dot);
+				if (score >= 0 && (score<incptScore || incptScore < 0)) {
+					Aa = (velocity*velocity - vr*vr)*(1+m*m);
+					Ba = 2*(velocity*velocity*(m*b-xm-m*ym) - vr*vr*(m*b-xb-m*yb));
+					Ca = velocity*velocity*(xm*xm + ym*ym + b*b - 2*b*ym) - vr*vr*(xb*xb + yb*yb + b*b - 2*b*yb);
+					
+					discrim = Ba*Ba - 4*Aa*Ca;
+					if (discrim < 0) continue;
+					if (discrim == 0) {
+						xa = -Ba/(2*Aa);
+						ya = m*xa+b;
+					} else {
+						xa1 = (-Ba+Math.sqrt(discrim))/(2*Aa);
+						xa2 = (-Ba-Math.sqrt(discrim))/(2*Aa);
+						ya1 = m*xa1+b;
+						ya2 = m*xa2+b;
+						dxa1t = xa1 - xm;
+						dxa2t = xa2 - xm;
+						dya1t = ya1 - ym;
+						dya2t = ya2 - ym;
+						d1 = Math.sqrt(dxa1t*dxa1t + dya1t*dya1t);
+						d2 = Math.sqrt(dxa2t*dxa2t + dya2t*dya2t);
+						if (d1<d2) {
+							xa = xa1;
+							ya = ya1;
+							dta = d1/vr;
+						} else {
+							xa = xa2;
+							ya = ya2;
+							dta = d2/vr;
+						}
+					}
+					incptScore = score;
+				}
 			}
+			if (incptScore > 0) {
+				angle(Math.atan2(ya-yb, xa-xb), dt);
+				shoot(dta<=life && Math.abs(theta-angle)<=minShootingAngleDiff);
+			} else shoot = false;
 		}
 		if (shoot) {
 			if (shootHold == 0) shootHold = time;
 			if (shot <= (time-shootHold)/delay) {
 				shot++;
 				rad = angle+2*(Math.random()-0.5)*dispersion;
-				FusedShell s = new ProxyShell(
-						vessel.x+ox+(bridgeLength/2+barrelLength)*Math.cos(angle), 
-						vessel.y+oy+(bridgeLength/2+barrelLength)*Math.sin(angle), 
+				FusedShell s = new ProxyShell(vessel.x+ox, vessel.y+oy, 
 						vessel.vx+velocity*Math.cos(rad), 
 						vessel.vy+velocity*Math.sin(rad), time, life, world);
 				world.exclusiveColliders.add(s);
@@ -100,14 +167,31 @@ public class CIWSTurret extends Module {
 		} else thrusting = false;
 		this.shoot = shoot;
 	}
-	public void angle(double angle) {
-		angle = Navigator.posRad(angle);
-		while (angle < minAngle) angle+= 2*Math.PI;
-		if (angle > maxAngle) {
-			if (minAngle-(angle-2*Math.PI)>angle-maxAngle) angle=maxAngle;
-			else angle = minAngle;
+	public void angle(double input, double dt) {
+		theta = input;
+		theta = Navigator.posRad(theta)-2*Math.PI;
+		while (theta < minAngle) theta+= 2*Math.PI;
+		if (theta > maxAngle) {
+			if (Math.abs(Navigator.posRad(minAngle)-Navigator.posRad(theta))>theta-maxAngle) theta=maxAngle;
+			else theta = minAngle;
 		}
-		this.angle = angle;
+		if (maxAngle-minAngle >= 2*Math.PI) {
+			theta = Navigator.posRad(theta);
+			angle = Navigator.posRad(angle);
+			if (Math.abs(theta-angle) <= maxAngleRate*dt) angle=theta;
+			if (angle<theta) {
+				if (theta-angle>Math.PI) angle-=maxAngleRate*dt;
+				else angle+=maxAngleRate*dt;
+			}
+			if (angle>theta) {
+				if (angle-theta>Math.PI) angle+=maxAngleRate*dt;
+				else angle-=maxAngleRate*dt;
+			}
+		} else {
+			if (Math.abs(theta-angle) <= maxAngleRate*dt) angle=theta;
+			if (angle>theta) angle -= maxAngleRate*dt;
+			if (angle<theta) angle += maxAngleRate*dt;
+		}
 	}
 	public void calcStops() {
 		stops = new Stop[] {new Stop(0, exhaustColor), new Stop(1, Color.TRANSPARENT)};

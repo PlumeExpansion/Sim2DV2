@@ -2,10 +2,10 @@ package me.plume.components;
 
 import javafx.scene.canvas.GraphicsContext;
 
-public abstract class Module {
+public abstract class VesselModule {
 	public double ox, oy;
 	public Vessel vessel;
-	public Module(Vessel vessel) {
+	public VesselModule(Vessel vessel) {
 		this.vessel = vessel;
 	}
 	public abstract void update(double time, double dt);

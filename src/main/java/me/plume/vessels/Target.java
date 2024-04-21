@@ -29,6 +29,7 @@ public class Target extends Vessel {
 		this.color = c;
 		immune = true;
 		turret = new CIWSTurret(this, world, SHOT_DELAY, SHOT_VELOCITY, SHOT_LIFE, DISPERSION);
+		turret.maxAngleRate = Math.toRadians(115);
 	}
 	public void update(double time, double dt) {
 		if (left) vx-=ACCEL*dt;
@@ -60,13 +61,15 @@ class TargetMarker extends Dot {
 		minScaleR = r*1.5;
 		statusR = r*0.75;
 	}
+	boolean minScaled;
 	public void render(GraphicsContext c, double x, double y, double s) {
 		if (s<Target.MIN_SCALE) {
 			s = Target.MIN_SCALE;
 			c.setStroke(Color.YELLOW);
 			c.setLineWidth(Target.MIN_SCALE_WIDTH);
 			c.strokeOval(x-minScaleR*s, y-minScaleR*s, minScaleR*2*s, minScaleR*2*s);
-		}
+			minScaled = true;
+		} else minScaled = false;
 		if (t.left) {
 			c.setFill(left);
 			c.fillRect(x, -w/2*s+y, l*s, w*s);
@@ -83,10 +86,15 @@ class TargetMarker extends Dot {
 			c.setFill(down);
 			c.fillRect(-w/2*s+x, -l*s+y, w*s, l*s);
 		}
-		super.render(c, x, y, s);
-		if (t.status != null) {
-			c.setFill(t.status);
-			c.fillOval(x-statusR*s, y-statusR*s, statusR*2*s, statusR*2*s);
+		if (minScaled) {
+			color = t.status == null? t.color : t.status;
+			super.render(c, x, y, s);
+		} else {
+			super.render(c, x, y, s);
+			if (t.status != null) {
+				c.setFill(t.status);
+				c.fillOval(x-statusR*s, y-statusR*s, statusR*2*s, statusR*2*s);
+			}
 		}
 		t.turret.render(c, x, y, s);
 	}
