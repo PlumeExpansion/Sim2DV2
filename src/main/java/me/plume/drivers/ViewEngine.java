@@ -1,8 +1,5 @@
 package me.plume.drivers;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.scene.Scene;
@@ -10,7 +7,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.paint.Color;
-import me.plume.components.Marker;
+import me.plume.components.Vessel;
 
 public class ViewEngine {
 	static final int FPS_N = 10;
@@ -21,46 +18,52 @@ public class ViewEngine {
 	Scene scene;
 	GraphicsContext c;
 	AnimationTimer timer;
-	public double offsetX, offsetY;
+	private double offsetX, offsetY;
 	double ox, oy, ix, iy, os;
 	public double scale = DEFAULT_SCALE;
 	boolean mcs;
-	public Integer trackId;
-	private Marker trackMark;
+	boolean tracking;
+	private double trackX, trackY;
+	private double camX, camY;
+	public double trackX() {return trackX;}
+	public double trackY() {return trackY;}
+	public double camX() {return camX;}
+	public double camY() {return camY;}
+	public double offsetX() {return offsetX;}
+	public double offsetY() {return offsetY;}
 	public ViewEngine(Launcher instance) {
 		launcher = instance;
-		offsetX = Launcher.WIDTH/2/DEFAULT_SCALE;
-		offsetY = -Launcher.HEIGHT/2/DEFAULT_SCALE;
 		scene = launcher.scene;
 		c = launcher.c;
+		center();
 		render();
 	}
 	public void addSceneListeners() {
 		scene.widthProperty().addListener((obv, ov, nv) -> {
 			launcher.canvas.setWidth(nv.doubleValue());
+			camX += (nv.doubleValue()-ov.doubleValue())/scale/2;
 			render();
 		});
 		scene.heightProperty().addListener((obv, ov, nv) -> {
 			launcher.canvas.setHeight(nv.doubleValue());
+			camY -= (nv.doubleValue()-ov.doubleValue())/scale/2;
 			render();
 		});
 		var pressHandler = scene.getOnMousePressed();
 		scene.setOnMousePressed(e -> {
 			if (pressHandler != null) pressHandler.handle(e);
 			if (e.getButton() != MouseButton.MIDDLE) return;
-			if (trackId != null) trackId = null;
 			ix = e.getSceneX();
 			iy = e.getSceneY();
-			ox = offsetX;
-			oy = offsetY;
+			ox = camX;
+			oy = camY;
 		});
 		var dragHandler = scene.getOnMouseDragged();
 		scene.setOnMouseDragged(e -> {
 			if (dragHandler != null) dragHandler.handle(e);
 			if (e.getButton() != MouseButton.MIDDLE) return;
-			if (trackId != null) trackId = null;
-			offsetX = ox+(e.getSceneX()-ix)/scale;
-			offsetY = oy-(e.getSceneY()-iy)/scale;
+			camX = ox+(e.getSceneX()-ix)/scale;
+			camY = oy-(e.getSceneY()-iy)/scale;
 			render();
 		});
 		var scrollHandler = scene.getOnScroll();
@@ -70,11 +73,11 @@ public class ViewEngine {
 			if (e.getDeltaY() > 0) scale *= SCALE_FACTOR;
 			else scale /= SCALE_FACTOR;
 			if (mcs) {
-				offsetX -= e.getSceneX()*(1/os - 1/scale);
-				offsetY += e.getSceneY()*(1/os - 1/scale);
+				camX -= e.getSceneX()*(1/os - 1/scale);
+				camY += e.getSceneY()*(1/os - 1/scale);
 			} else {
-				offsetX -= scene.getWidth()/2*(1/os - 1/scale);
-				offsetY += scene.getHeight()/2*(1/os - 1/scale);
+				camX -= scene.getWidth()/2*(1/os - 1/scale);
+				camY += scene.getHeight()/2*(1/os - 1/scale);
 			}
 			render();
 		});
@@ -84,27 +87,36 @@ public class ViewEngine {
 			if (e.getCode() == KeyCode.M) mcs = !mcs;
 			if (e.getCode() == KeyCode.DECIMAL) {
 				scale = DEFAULT_SCALE;
-				offsetX = scene.getWidth()/2/DEFAULT_SCALE-(trackId==null? 0 : trackMark.x);
-				offsetY = -scene.getHeight()/2/DEFAULT_SCALE-(trackId==null? 0 : trackMark.y);
+				center();
 				render();
 			}
 		});
+	}
+	private void center() {
+		camX = scene.getWidth()/2/scale;
+		camY = -scene.getHeight()/2/scale;
+	}
+	public void track(Vessel track) {
+		if (track != null) {
+			if (!tracking) center();
+			trackX = -track.x;
+			trackY = -track.y;
+			tracking = true;
+		} else if (tracking) {
+			camX += trackX;
+			camY += trackY;
+			trackX = 0;
+			trackY = 0;
+			tracking = false;
+		}
 	}
 	public void render() {
 		Platform.runLater(() -> {
 			c.setFill(Color.BLACK);
 			c.fillRect(0, 0, scene.getWidth(), scene.getHeight());
+			offsetX = camX + trackX;
+			offsetY = camY + trackY;
 			Grid.render(scene, c, offsetX, offsetY, scale);
-			// Find Track
-			if (trackId != null) {
-				List<Marker> lst = launcher.world.markers.stream().filter(m -> m.getId()==trackId).collect(Collectors.toList());
-				if (lst.size() == 0) trackId = null;
-				else {
-					trackMark = lst.get(0);
-					offsetX = scene.getWidth()/2/scale-trackMark.x;
-					offsetY = -scene.getHeight()/2/scale-trackMark.y;
-				}
-			}
 			try {
 				launcher.world.markers.forEach(m -> m.render(c, (m.x+offsetX)*scale, -(m.y+offsetY)*scale, scale));
 			} catch (Exception e) {}

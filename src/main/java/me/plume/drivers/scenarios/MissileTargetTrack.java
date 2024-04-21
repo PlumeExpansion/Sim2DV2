@@ -36,8 +36,7 @@ public class MissileTargetTrack extends Scenario {
 			logMouseCoord(e);
 		});
 		scene.setOnMouseDragged(e -> {
-			if (e.getButton() == MouseButton.PRIMARY) logMouseCoord(e);
-			if (e.getButton() == MouseButton.SECONDARY) logMouseCoord(e);
+			logMouseCoord(e);
 		});
 		scene.setOnMousePressed(e -> {
 			if (e.getClickCount() == 2 && e.getButton() == MouseButton.PRIMARY) track(e);
@@ -81,7 +80,7 @@ public class MissileTargetTrack extends Scenario {
 				breakCheck(!breaking);
 			}
 			if (code == KeyCode.ESCAPE) {
-				view.trackId = null;
+				world.track = null;
 			}
 		});
 		scene.setOnKeyReleased(e -> {
@@ -102,11 +101,11 @@ public class MissileTargetTrack extends Scenario {
 		if (world.vessels.isEmpty()) return;
 		for (int i = 0; i < world.vessels.size(); i++) {
 			Vessel v = world.vessels.get(i);
-			double dx = (v.x+view.offsetX)*view.scale-e.getSceneX();
-			double dy = -(v.y+view.offsetY)*view.scale-e.getSceneY();
+			double dx = (v.x+view.offsetX())*view.scale-e.getSceneX();
+			double dy = -(v.y+view.offsetY())*view.scale-e.getSceneY();
 			double d = Math.sqrt(dx*dx+dy*dy);
 			if (d <= TRACK_DIST) {
-				view.trackId = v.getId();
+				world.track = v;
 				trackN = i;
 				break;
 			}
@@ -118,7 +117,7 @@ public class MissileTargetTrack extends Scenario {
 		if (prev) trackN--;
 		if (trackN >= world.vessels.size()) trackN=0;
 		if (trackN < 0) trackN = world.vessels.size()-1;
-		view.trackId = world.vessels.get(trackN).getId();
+		world.track = world.vessels.get(trackN);
 	}
 	private void logMouseCoord(MouseEvent e) {
 		sx = e.getSceneX();
@@ -143,12 +142,12 @@ public class MissileTargetTrack extends Scenario {
 	double switchHold;
 	int switchN;
 	public void tick(double time, double dt) {
-		x = sx/view.scale-view.offsetX;
-		y = -sy/view.scale-view.offsetY;
+		x = sx/view.scale-view.offsetX();
+		y = -sy/view.scale-view.offsetY();
 		target.turret.aiming.targets = world.vessels;
 		if (!target.turret.auto) target.turret.angle(
-				(view.trackId != null && target.getId() == view.trackId)? 
-						Math.atan2(-sy+scene.getHeight()/2, sx-scene.getWidth()/2): 
+				(world.track != null && target == world.track)? 
+						Math.atan2(-sy-view.camY()*view.scale, sx-view.camX()*view.scale) : 
 							Math.atan2(y-target.y, x-target.x), dt);
 		if (fire) {
 			if (fireHold == 0) fireHold = time;

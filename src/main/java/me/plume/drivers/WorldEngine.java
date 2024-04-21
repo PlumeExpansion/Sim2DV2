@@ -18,6 +18,7 @@ public class WorldEngine {
 	public List<Vessel> exclusiveColliders = Collections.synchronizedList(new LinkedList<>());
 	public List<Vessel> effects = Collections.synchronizedList(new LinkedList<>());
 	public List<Marker> markers = Collections.synchronizedList(new LinkedList<>());
+	public Vessel track;
 	Thread thread;
 	boolean terminated;
 	public WorldEngine(Launcher instance) {
@@ -63,17 +64,18 @@ public class WorldEngine {
 					fpsN=0;
 					Platform.runLater(() -> {
 						launcher.window.setTitle(Launcher.TITLE
-								+" - scale: "+(int) (launcher.view.scale*100)/100.0
-								+" - fps: "+fps
-								+" - updateCount: "+updateCount
-								+" - buffer: "+buffer
-								+" - trackId: "+launcher.view.trackId);
+						+" - scale: "+(int) (launcher.view.scale*100)/100.0
+						+" - fps: "+fps
+						+" - updateCount: "+updateCount
+						+" - buffer: "+buffer
+						+" - trackId: "+(track!=null? track.getId() : "null"));
 					});
 				}
 				markers = markers.stream().filter(m -> m.getId()<0).collect(Collectors.toList());
 				markers.addAll(vessels.stream().map(v -> v.mark()).collect(Collectors.toList()));
 				markers.addAll(exclusiveColliders.stream().map(v -> v.mark()).collect(Collectors.toList()));
 				markers.addAll(effects.stream().map(v -> v.mark()).collect(Collectors.toList()));
+				launcher.view.track(track);
 				launcher.view.render();
 			}
 		});
