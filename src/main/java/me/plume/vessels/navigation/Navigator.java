@@ -15,4 +15,7 @@ public abstract class Navigator {
 		rad %= 2*Math.PI;
 		return rad>0? rad : rad+2*Math.PI;
 	}
+	public static double angleDiff(double a, double b) {
+		return Math.min(Math.abs(posRad(a)-posRad(b)), Math.abs(posRad(a)-(2*Math.PI-posRad(b))));
+	}
 }
