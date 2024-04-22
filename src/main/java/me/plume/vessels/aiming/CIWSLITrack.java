@@ -20,12 +20,12 @@ public class CIWSLITrack {
 	public CIWSLITrack(int trackId) {
 		this.trackId = trackId;
 	}
+	double xb, yb, xm, ym;
+	double vrx, vry, vr;
+	double dx, dti, dxit, dyit, dot;
+	double xi, yi;
+	double A, B, C, k, Ad, Bd, Cd;
 	public CIWSLITrack calcTrack(Vessel v, Vessel t, double time, double dt) {
-		double xb, yb, xm, ym;
-		double vrx, vry, vr;
-		double dx, dti, dxit, dyit, dot;
-		double xi, yi;
-		double A, B, C, k, Ad, Bd, Cd;
 		xb = v.x;
 		yb = v.y;
 		xm = t.x;
@@ -57,13 +57,24 @@ public class CIWSLITrack {
 		else deligN = 1;
 		return this;
 	}
-	public double calcAngle(CIWSTurret turret) {
+	public Double calcAngle(CIWSTurret turret) {
+		double vb, m, b;
+		double Aa, Ba, Ca;
+		double discrim;
+		double xa1, xa2, ya1, ya2, dxa1t, dxa2t, dya1t, dya2t;
+		double d1, d2;
+		
+		vb = turret.velocity;
+		
+		m=vry/vrx;
+		b = ym - m*xm;
+		
 		Aa = (vb*vb - vr*vr)*(1+m*m);
 		Ba = 2*(vb*vb*(m*b-xm-m*ym) - vr*vr*(m*b-xb-m*yb));
 		Ca = vb*vb*(xm*xm + ym*ym + b*b - 2*b*ym) - vr*vr*(xb*xb + yb*yb + b*b - 2*b*yb);
 		
 		discrim = Ba*Ba - 4*Aa*Ca;
-		if (discrim < 0) continue;
+		if (discrim < 0) return null;
 		if (discrim == 0) {
 			xa = -Ba/(2*Aa);
 			ya = m*xa+b;
@@ -88,7 +99,7 @@ public class CIWSLITrack {
 				dta = d2/vr;
 			}
 		}
-		angle = Math.atan2(ya-yb, xa-xb);
+		return Math.atan2(ya-yb, xa-xb);
 	}
 	public int getId() {return trackId;}
 }

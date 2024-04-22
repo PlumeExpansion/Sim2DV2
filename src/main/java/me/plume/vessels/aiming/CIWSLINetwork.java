@@ -21,6 +21,11 @@ public class CIWSLINetwork {
 			if (tracks.containsKey(t.getId())) return tracks.get(t.getId()).calcTrack(v, t, time, dt);
 			else return new CIWSLITrack(t.getId()).calcTrack(v, t, time, dt);
 		}).collect(Collectors.toMap(track -> track.getId(), track -> track));
-		
+		tracks.values().forEach(track -> {
+			turrets.forEach(t -> {
+				double theta = track.calcAngle(t);
+				if (t.angleFromBounds(theta)>0) track.availables.add(t);
+			});
+		});
 	}
 }
