@@ -2,6 +2,7 @@ package me.plume.vessels.aiming;
 
 import me.plume.components.Vessel;
 import me.plume.modules.CIWSTurret;
+import me.plume.vessels.navigation.Navigator;
 
 public class CIWSLeadIntercept extends Aiming {
 	double xb, yb, xm, ym;
@@ -10,7 +11,10 @@ public class CIWSLeadIntercept extends Aiming {
 	double dxa1t, dya1t, dxa2t, dya2t, dta;
 	double xa1, ya1, xa2, ya2, d1, d2, xa, ya, xi, yi;
 	double A, B, C, k, Ad, Bd, Cd, Aa, Ba, Ca, discrim;
-	double incptScore, score;
+	double score, angle;
+	double inRangeScore, outRangeAngleDiff;
+	double inRangeAngle, outRangeAngle;
+	double inRangeDta, outRangeDta;
 	CIWSTurret turret;
 	public CIWSLeadIntercept(CIWSTurret turret) {
 		super(turret);
@@ -21,7 +25,7 @@ public class CIWSLeadIntercept extends Aiming {
 			turret.shoot(false);
 			return;
 		}
-		incptScore = -1;
+		inRangeScore = outRangeAngleDiff = -1;
 		xb = turret.vessel.x + turret.ox;
 		yb = turret.vessel.y + turret.oy;
 		for (Vessel t : targets) {
@@ -53,7 +57,7 @@ public class CIWSLeadIntercept extends Aiming {
 			dot = dxit*vrx + dyit*vry;
 			
 			score = (dx+dti)*Math.signum(dot);
-			if (score >= 0 && (score<incptScore || incptScore < 0)) {
+			if (score >= 0) {
 				Aa = (vb*vb - vr*vr)*(1+m*m);
 				Ba = 2*(vb*vb*(m*b-xm-m*ym) - vr*vr*(m*b-xb-m*yb));
 				Ca = vb*vb*(xm*xm + ym*ym + b*b - 2*b*ym) - vr*vr*(xb*xb + yb*yb + b*b - 2*b*yb);
@@ -84,12 +88,30 @@ public class CIWSLeadIntercept extends Aiming {
 						dta = d2/vr;
 					}
 				}
-				incptScore = score;
+				angle = Math.atan2(ya-yb, xa-xb);
+				if (turret.angleFromBounds(angle) > 0) {
+					if (score < inRangeScore || inRangeScore < 0) {
+						inRangeScore = score;
+						inRangeAngle = angle;
+						inRangeDta = dta;
+					}
+				} else if (-turret.angleFromBounds(angle) < outRangeAngleDiff || outRangeAngleDiff < 0) {
+					outRangeAngleDiff = -turret.angleFromBounds(angle);
+					outRangeAngle = angle;
+					outRangeDta = dta;
+				}
 			}
 		}
-		if (incptScore > 0) {
-			turret.angle(Math.atan2(ya-yb, xa-xb), dt);
-			turret.shoot(dta<=turret.life && Math.abs(turret.getTheta()-turret.getAngle())<=turret.minShootingAngleDiff);
+		if (inRangeScore > 0 || outRangeAngleDiff > 0) {
+			if (inRangeScore>0) {
+				angle = inRangeAngle;
+				dta = inRangeDta;
+			} else {
+				angle = outRangeAngle;
+				dta = outRangeDta;
+			}
+			turret.angle(angle, dt);
+			turret.shoot(dta<=turret.life && Math.abs(Navigator.posRad(angle)-Navigator.posRad(turret.getAngle()))<=turret.minShootingAngleDiff);
 		} else turret.shoot(false);
 	}
 }

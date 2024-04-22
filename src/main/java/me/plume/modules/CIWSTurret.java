@@ -35,11 +35,11 @@ public class CIWSTurret extends Turret {
 	public double exhaustTime;
 	public double minScale = 10;
 	public Color iconColor = Color.GRAY;
-	public double iconR = 0.7;
+	public double iconR = 0.6;
 	public double iconW = 0.3;
 	public double iconL = 1;
-	public double minScaleWidth = 2;
-	public double minScaleR = 1.5;
+	public double minScaleWidth = 1;
+	public double minScaleR = 1;
 	public double minShootingAngleDiff = Math.toRadians(15);
 	double rad;
 	public double velocity, life, dispersion;
@@ -75,6 +75,8 @@ public class CIWSTurret extends Turret {
 		stops = new Stop[] {new Stop(0, exhaustColor), new Stop(1, Color.TRANSPARENT)};
 	}
 	public void render(GraphicsContext c, double x, double y, double s) {
+		x += ox*s;
+		y -= oy*s;
 		if (s<minScale) {
 			s = minScale;
 			c.setStroke(Color.YELLOW);

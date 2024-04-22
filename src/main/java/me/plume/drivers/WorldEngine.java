@@ -98,6 +98,7 @@ public class WorldEngine {
 				}
 			}
 		}
+		launcher.view.realTimeTrack(track);
 		launcher.scenario.tick(time, dt);
 	}
 	public void stop() {

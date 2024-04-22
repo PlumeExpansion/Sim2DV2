@@ -1,4 +1,4 @@
-package me.plume.vessels;
+package me.plume.vessels.targets;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -8,51 +8,41 @@ import javafx.scene.paint.Stop;
 import me.plume.components.Marker;
 import me.plume.components.Vessel;
 import me.plume.components.markers.Dot;
-import me.plume.drivers.WorldEngine;
-import me.plume.modules.CIWSTurret;
 
-public class Target extends Vessel {
-	static final double SHOT_LIFE = 2;
-	static final double SHOT_DELAY = 1.0/(4500/60);
-	static final double SHOT_VELOCITY = 1100;
-	static final double DISPERSION = Math.toRadians(0.5);
+public class RCSTarget extends Vessel {
 	public static final double ACCEL = 70;
 	static final double MIN_SCALE = 2;
 	static final double MIN_SCALE_WIDTH = 2;
 	Color color;
 	public Color status;
 	public boolean left, right, up, down;
-	public CIWSTurret turret;
-	public Target(double x, double y, double r, Color c, WorldEngine world) {
+	public RCSTarget(double x, double y, double r, Color c) {
 		super(x, y);
 		this.r = r;
 		this.color = c;
 		immune = true;
-		turret = new CIWSTurret(this, world, SHOT_DELAY, SHOT_VELOCITY, SHOT_LIFE, DISPERSION);
-		turret.maxAngleRate = Math.toRadians(115);
 	}
 	public void update(double time, double dt) {
 		if (left) vx-=ACCEL*dt;
 		if (right) vx+=ACCEL*dt;
 		if (up) vy+=ACCEL*dt;
 		if (down) vy-=ACCEL*dt;
-		turret.update(time, dt);
 	}
 	public void onRemove(double time, double dt) {}
 	public Marker mark() {
-		return new TargetMarker(getId(), x, y, this);
+		return new RCSTargetMarker(getId(), x, y, this);
 	}
 }
-class TargetMarker extends Dot {
+class RCSTargetMarker extends Dot {
 	static final Stop[] stops = {new Stop(0, Color.WHITE), new Stop(1, Color.TRANSPARENT)};
 	static final LinearGradient left = new LinearGradient(0, 0, 1, 0, true, CycleMethod.NO_CYCLE, stops);
 	static final LinearGradient right = new LinearGradient(1, 0, 0, 0, true, CycleMethod.NO_CYCLE, stops);
 	static final LinearGradient up = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, stops);
 	static final LinearGradient down = new LinearGradient(0, 1, 0, 0, true, CycleMethod.NO_CYCLE, stops);
-	Target t;
+	RCSTarget t;
 	double w, l;
 	double minScaleR, statusR;
-	public TargetMarker(int id, double x, double y, Target target) {
+	public RCSTargetMarker(int id, double x, double y, RCSTarget target) {
 		super(id, x, y, target.r, target.color);
 		t = target;
 		scale = true;
@@ -63,10 +53,10 @@ class TargetMarker extends Dot {
 	}
 	boolean minScaled;
 	public void render(GraphicsContext c, double x, double y, double s) {
-		if (s<Target.MIN_SCALE) {
-			s = Target.MIN_SCALE;
+		if (s<RCSTarget.MIN_SCALE) {
+			s = RCSTarget.MIN_SCALE;
 			c.setStroke(Color.YELLOW);
-			c.setLineWidth(Target.MIN_SCALE_WIDTH);
+			c.setLineWidth(RCSTarget.MIN_SCALE_WIDTH);
 			c.strokeOval(x-minScaleR*s, y-minScaleR*s, minScaleR*2*s, minScaleR*2*s);
 			minScaled = true;
 		} else minScaled = false;
@@ -96,6 +86,5 @@ class TargetMarker extends Dot {
 				c.fillOval(x-statusR*s, y-statusR*s, statusR*2*s, statusR*2*s);
 			}
 		}
-		t.turret.render(c, x, y, s);
 	}
 }

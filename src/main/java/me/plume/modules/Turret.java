@@ -40,6 +40,13 @@ public abstract class Turret extends VesselModule {
 		}
 		this.shoot = shoot;
 	}
+	public double angleFromBounds(double angle) {
+		angle = Navigator.posRad(angle)-2*Math.PI;
+		while (angle < minAngle) angle+= 2*Math.PI;
+		if (angle>maxAngle) {
+			return Math.max(-Math.abs(Navigator.posRad(minAngle)-Navigator.posRad(angle)), maxAngle-angle);
+		} else return Math.min(angle-minAngle, maxAngle-minAngle);
+	}
 	public void angle(double input, double dt) {
 		theta = input;
 		theta = Navigator.posRad(theta)-2*Math.PI;

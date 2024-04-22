@@ -23,6 +23,7 @@ public class ViewEngine {
 	public double scale = DEFAULT_SCALE;
 	boolean mcs;
 	boolean tracking;
+	private double realTimeTrackX, realTimeTrackY;
 	private double trackX, trackY;
 	private double camX, camY;
 	public double trackX() {return trackX;}
@@ -31,6 +32,8 @@ public class ViewEngine {
 	public double camY() {return camY;}
 	public double offsetX() {return offsetX;}
 	public double offsetY() {return offsetY;}
+	public double realTimeOffsetX() {return realTimeTrackX + camX;}
+	public double realTimeOffsetY() {return realTimeTrackY + camY;}
 	public ViewEngine(Launcher instance) {
 		launcher = instance;
 		scene = launcher.scene;
@@ -108,6 +111,15 @@ public class ViewEngine {
 			trackX = 0;
 			trackY = 0;
 			tracking = false;
+		}
+	}
+	public void realTimeTrack(Vessel track) {
+		if (track != null) {
+			realTimeTrackX = -track.x;
+			realTimeTrackY = -track.y;
+		} else {
+			realTimeTrackX = 0;
+			realTimeTrackY = 0;
 		}
 	}
 	public void render() {

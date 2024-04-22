@@ -8,8 +8,8 @@ import me.plume.components.Scenario;
 import me.plume.components.Vessel;
 import me.plume.drivers.Launcher;
 import me.plume.vessels.Missile;
-import me.plume.vessels.Target;
 import me.plume.vessels.navigation.LeadIntercept;
+import me.plume.vessels.targets.*;
 
 public class MissileTargetTrack extends Scenario {
 	static final double TRACK_DIST = 50;
@@ -22,7 +22,7 @@ public class MissileTargetTrack extends Scenario {
 	static final double SHOOT_DELAY = 1.0/(4500/60);
 	static final double SHOOT_VELOCITY = 1100;
 	static final double DISPERSION = Math.toRadians(0.5);
-	Target target;
+	TurretedRCSTarget target;
 	public MissileTargetTrack(Launcher instance) {
 		super(instance);
 		launcher.runWorld = true;
@@ -31,7 +31,7 @@ public class MissileTargetTrack extends Scenario {
 	boolean fire, track, breaking, next, prev, autobreak;
 	int trackN=-1;
 	public void init() {
-		target = new Target(0, 0, 5, Color.CYAN, world);
+		target = new QuadTurretRCSTarget(0, 0, 5, Color.CYAN, world);
 		scene.setOnMouseMoved(e -> {
 			logMouseCoord(e);
 		});
@@ -40,7 +40,7 @@ public class MissileTargetTrack extends Scenario {
 		});
 		scene.setOnMousePressed(e -> {
 			if (e.getClickCount() == 2 && e.getButton() == MouseButton.PRIMARY) track(e);
-			if (e.getClickCount() == 1 && e.getButton() == MouseButton.PRIMARY) if (!target.turret.auto) target.turret.shoot(true);
+			if (e.getClickCount() == 1 && e.getButton() == MouseButton.PRIMARY) if (!target.auto()) target.setShoot(true);
 			if (e.getButton() == MouseButton.SECONDARY) {
 				fire = true;
 				fireHold = 0;
@@ -48,7 +48,7 @@ public class MissileTargetTrack extends Scenario {
 			}
 		});
 		scene.setOnMouseReleased(e -> {
-			if (e.getButton() == MouseButton.PRIMARY) if (!target.turret.auto) target.turret.shoot(false);
+			if (e.getButton() == MouseButton.PRIMARY) if (!target.auto()) target.setShoot(false);
 			if (e.getButton() == MouseButton.SECONDARY) fire = false;
 		});
 		scene.setOnKeyPressed(e -> {
@@ -58,7 +58,7 @@ public class MissileTargetTrack extends Scenario {
 			if (code == KeyCode.A) target.left = true;
 			if (code == KeyCode.S) target.down = true;
 			if (code == KeyCode.D) target.right = true;
-			if (code == KeyCode.C) target.turret.auto = !target.turret.auto;
+			if (code == KeyCode.C) target.setAuto(!target.auto());
 			if (code == KeyCode.B) {
 				autobreak = !autobreak;
 				if (autobreak && !breaking && !target.up && !target.left && !target.down && !target.right) breaking = true;
@@ -144,11 +144,11 @@ public class MissileTargetTrack extends Scenario {
 	public void tick(double time, double dt) {
 		x = sx/view.scale-view.offsetX();
 		y = -sy/view.scale-view.offsetY();
-		target.turret.aiming.targets = world.vessels;
-		if (!target.turret.auto) target.turret.angle(
-				(world.track != null && target == world.track)? 
-						Math.atan2(-sy-view.camY()*view.scale, sx-view.camX()*view.scale) : 
-							Math.atan2(y-target.y, x-target.x), dt);
+		target.setTargets(world.vessels);
+		if (!target.auto()) {
+			if (world.track != null && target == world.track) target.setAim(sx/view.scale-view.realTimeOffsetX(), -sy/view.scale-view.realTimeOffsetY(), dt);
+			else target.setAim(x, y, dt);
+		}
 		if (fire) {
 			if (fireHold == 0) fireHold = time;
 			if (fired <= (time-fireHold)/SPAWN_DELAY) {
@@ -160,8 +160,8 @@ public class MissileTargetTrack extends Scenario {
 			}
 		}
 		if (breaking) {
-			if (Math.abs(target.vx) <= Target.ACCEL*dt) target.vx=0;
-			if (Math.abs(target.vy) <= Target.ACCEL*dt) target.vy=0;
+			if (Math.abs(target.vx) <= RCSTarget.ACCEL*dt) target.vx=0;
+			if (Math.abs(target.vy) <= RCSTarget.ACCEL*dt) target.vy=0;
 			target.left = target.vx>0;
 			target.right = target.vx<0;
 			target.up = target.vy<0;

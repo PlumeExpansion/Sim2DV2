@@ -7,10 +7,11 @@ import me.plume.components.Vessel;
 import me.plume.components.markers.Heading;
 import me.plume.drivers.WorldEngine;
 import me.plume.vessels.navigation.Navigator;
+import me.plume.vessels.targets.RCSTarget;
 
 public class Missile extends Vessel {
 	static final double BURN_TIME = 6;
-	static final double ACCEL = 1372/BURN_TIME;
+	static final double ACCEL = 343*4/BURN_TIME;
 	public static final double SIZE = 3;
 	public static final double LIFE = 30;
 	public static final double MAX_ROT_RATE = Math.toRadians(120);
@@ -28,14 +29,14 @@ public class Missile extends Vessel {
 	static final double HIT_POINTS = 7;
 	static final double DAMAGE = 50;
 	Color color;
-	Target target;
+	RCSTarget target;
 	public Navigator navigator;
 	public double angle, v;
 	double size;
 	double spawn, life;
 	boolean armed;
 	WorldEngine world;
-	public Missile(double x, double y, double size, double spawn, double life, Target target, Color c, WorldEngine world) {
+	public Missile(double x, double y, double size, double spawn, double life, RCSTarget target, Color c, WorldEngine world) {
 		super(x, y);
 		this.r = size;
 		this.size = size;
