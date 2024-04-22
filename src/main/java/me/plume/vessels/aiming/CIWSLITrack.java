@@ -1,13 +1,14 @@
 package me.plume.vessels.aiming;
 
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import me.plume.components.Vessel;
 import me.plume.modules.CIWSTurret;
 
 public class CIWSLITrack {
 	static final double MIN_DTI = 2;
-	static final double SHOOT_TIME = 1;
+	static final double SHOOT_TIME = 0.25;
 	static final double RAD_ON_TARGET = Math.toRadians(1);
 	double incptScore;
 	double dta;
@@ -16,7 +17,8 @@ public class CIWSLITrack {
 	private int trackId;
 	double firstShot;
 	double lastShot;
-	List<CIWSTurret> availables;
+	Map<CIWSTurret, Double> availables = new LinkedHashMap<>();
+	Map<CIWSTurret, Double> backups = new LinkedHashMap<>();
 	public CIWSLITrack(int trackId) {
 		this.trackId = trackId;
 	}

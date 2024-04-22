@@ -12,6 +12,7 @@ import me.plume.components.Marker;
 import me.plume.components.Vessel;
 
 public class WorldEngine {
+	//TODO add time control
 	static final double MAX_STEP_DIST = 1;
 	Launcher launcher;
 	public List<Vessel> vessels = Collections.synchronizedList(new LinkedList<>());

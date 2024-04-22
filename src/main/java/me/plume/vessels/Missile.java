@@ -64,7 +64,7 @@ public class Missile extends Vessel {
 			if (!v.immune) v.hitpoints -= DAMAGE;
 			else remove = true;
 		});
-		world.exclusiveColliders.forEach(v -> {
+		if (!immune) world.exclusiveColliders.forEach(v -> {
 			if (dist(v)>r+v.r) return;
 			hitpoints -= v.damage;
 			v.vx += vx*VELOCITY_IMPARTED_SCALAR;

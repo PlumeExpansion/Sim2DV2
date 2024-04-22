@@ -44,6 +44,7 @@ public class CIWSTurret extends Turret {
 	double rad;
 	public double velocity, life, dispersion;
 	public boolean auto;
+	public boolean networked;
 	public Aiming aiming;
 	public CIWSTurret(Vessel vessel, WorldEngine world, double delay, double velocity, double life, double dispersion) {
 		super(vessel, world, delay);
@@ -56,7 +57,7 @@ public class CIWSTurret extends Turret {
 	}
 	boolean thrusting;
 	public void update(double time, double dt) {
-		if (auto) aiming.tick(time, dt);
+		if (auto && !networked) aiming.tick(time, dt);
 		super.update(time, dt);
 		if (shoot) thrusting = (time-shootHold)%delay < exhaustTime;
 	}

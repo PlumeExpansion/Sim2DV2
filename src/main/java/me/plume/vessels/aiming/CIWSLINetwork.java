@@ -1,31 +1,73 @@
 package me.plume.vessels.aiming;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import me.plume.components.Vessel;
 import me.plume.modules.CIWSTurret;
+import me.plume.vessels.navigation.Navigator;
 
 public class CIWSLINetwork {
 	Vessel v;
 	List<CIWSTurret> turrets;
-	Map<Integer, CIWSLITrack> tracks = new LinkedHashMap<>();
+	private Map<Integer, CIWSLITrack> tracks = new LinkedHashMap<>();
+	private List<CIWSTurret> occupied = new LinkedList<>();
 	public CIWSLINetwork(Vessel v, List<CIWSTurret> turrets) {
 		this.v = v;
 		this.turrets = turrets;
 	}
 	public void updateTracks(List<Vessel> targets, double time, double dt) {
+		// upating tracks
 		tracks = targets.stream().map(t -> {
 			if (tracks.containsKey(t.getId())) return tracks.get(t.getId()).calcTrack(v, t, time, dt);
 			else return new CIWSLITrack(t.getId()).calcTrack(v, t, time, dt);
-		}).collect(Collectors.toMap(track -> track.getId(), track -> track));
+		}).filter(track -> track.incptScore>0).collect(Collectors.toMap(CIWSLITrack::getId, Function.identity()));
+		tracks.forEach((id, track) -> {
+			if (time-track.lastShot>=track.dta) track.firstShot = 0;
+		});
+		// checking turret availability
 		tracks.values().forEach(track -> {
+			track.availables.clear();
 			turrets.forEach(t -> {
+				if (!t.auto) return;
 				double theta = track.calcAngle(t);
-				if (t.angleFromBounds(theta)>0) track.availables.add(t);
+				double angleFromBounds = t.angleFromBounds(theta);
+				if (angleFromBounds>0) track.availables.put(t, Navigator.angleDiff(theta, t.getAngle()));
+				else track.backups.put(t, angleFromBounds);
 			});
 		});
+		occupied.clear();
+		//TODO less dangerous missiles with deligN=2 seem to be hogging turrets
+		// assining available turrets
+		List<CIWSLITrack> orderedTracks = tracks.values().stream().sorted((a, b) -> a.incptScore<b.incptScore? -1 : 1).collect(Collectors.toList());
+		orderedTracks.forEach(track -> {
+			if (track.deligN == 0) return;
+			List<Entry<CIWSTurret, Double>> remaining = track.availables.entrySet().stream()
+					.filter(e -> !occupied.contains(e.getKey()))
+					.sorted((a, b) -> a.getValue()<b.getValue()? -1 : 1)
+					.collect(Collectors.toList());
+			for(int i = 0; i < Math.min(remaining.size(), track.deligN); i++) {
+				Entry<CIWSTurret, Double> e = remaining.get(i);
+				CIWSTurret t = e.getKey();
+				occupied.add(t);
+				t.angle(track.calcAngle(t), dt);
+				if (e.getValue() <= CIWSLITrack.RAD_ON_TARGET && track.dta <= t.life) {
+					track.lastShot = time;
+					if (track.firstShot == 0) track.firstShot = time;
+					t.shoot(true);
+				} else t.shoot(false);
+			}
+		});
+		// aiming free/unavailable turrets
+		if (occupied.size() < turrets.size()) {
+			turrets.stream().filter(t -> !occupied.contains(t) && t.auto).forEach(t -> {
+				t.shoot(false);
+			});
+		}
 	}
 }

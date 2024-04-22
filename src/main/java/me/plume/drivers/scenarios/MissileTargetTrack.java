@@ -156,6 +156,7 @@ public class MissileTargetTrack extends Scenario {
 				Missile m = new Missile(x, y, 
 						Missile.SIZE, time, Missile.LIFE, target, Color.RED, world);
 				m.navigator = new LeadIntercept(m, target);
+//				m.immune = true;
 				world.vessels.add(m);
 			}
 		}
