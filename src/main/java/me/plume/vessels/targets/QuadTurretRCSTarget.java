@@ -69,7 +69,7 @@ public class QuadTurretRCSTarget extends TurretedRCSTarget {
 	}
 	public void update(double time, double dt) {
 		super.update(time, dt);
-		network.updateTracks(world.vessels, time, dt);
+		if (network!=null) network.updateTracks(world.vessels, time, dt);
 		turrets.forEach(t -> t.update(time, dt));
 	}
 	public Marker mark() {
