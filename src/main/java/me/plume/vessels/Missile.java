@@ -13,7 +13,7 @@ public class Missile extends Vessel {
 	static final double BURN_TIME = 6;
 	static final double ACCEL = 343*4/BURN_TIME;
 	public static final double SIZE = 3;
-	public static final double LIFE = 30;
+	public static final double LIFE = 60 + Math.random()*30;
 	public static final double MAX_ROT_RATE = Math.toRadians(120);
 	static final double MIN_SCALE = 3;
 	static final double MIN_SCALE_WIDTH = 2;

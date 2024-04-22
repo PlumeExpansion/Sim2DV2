@@ -47,7 +47,10 @@ public class WorldEngine {
 						remainder = ViewEngine.FRAME_DEL % delay;
 						for (int i = 0; i < updateCount; i++) update(delay);
 						update(remainder);
-					} else update(ViewEngine.FRAME_DEL);
+					} else {
+						updateCount = 1;
+						update(ViewEngine.FRAME_DEL);
+					}
 					buffer = (now-lastUpdate)/1000.0;
 					lastUpdate = System.currentTimeMillis();
 					waiting=true;
