@@ -13,7 +13,7 @@ public class ViewEngine {
 	static final int FPS_N = 10;
 	static final double SCALE_FACTOR = 1.1;
 	static final double FRAME_DEL = 1.0/60;
-	static final double DEFAULT_SCALE = 10;
+	static final double DEFAULT_SCALE = 0.25;
 	Launcher launcher;
 	Scene scene;
 	GraphicsContext c;

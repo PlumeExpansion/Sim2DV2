@@ -54,9 +54,13 @@ public class CIWSLITrack {
 		
 		incptScore = (dx+dti)*Math.signum(dot);
 		
+		if (time-lastShot > dta) firstShot=0;
 		if (dti < MIN_DTI) deligN = 2;
-		else if (lastShot - firstShot > SHOOT_TIME && time-lastShot < dta) deligN = 0;
-		else deligN = 1;
+		else if (lastShot - firstShot >= SHOOT_TIME) deligN = 0;
+		else {
+			if (time-lastShot > dta) firstShot = 0;
+			deligN = 1;
+		}
 		return this;
 	}
 	public Double calcAngle(CIWSTurret turret) {

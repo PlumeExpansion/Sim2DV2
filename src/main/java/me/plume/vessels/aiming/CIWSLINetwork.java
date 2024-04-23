@@ -27,9 +27,6 @@ public class CIWSLINetwork {
 			if (tracks.containsKey(t.getId())) return tracks.get(t.getId()).calcTrack(v, t, time, dt);
 			else return new CIWSLITrack(t.getId()).calcTrack(v, t, time, dt);
 		}).filter(track -> track.incptScore>0).collect(Collectors.toMap(CIWSLITrack::getId, Function.identity()));
-		tracks.forEach((id, track) -> {
-			if (time-track.lastShot>=track.dta) track.firstShot = 0;
-		});
 		// checking turret availability
 		tracks.values().forEach(track -> {
 			track.availables.clear();
@@ -44,19 +41,25 @@ public class CIWSLINetwork {
 		occupied.clear();
 		//TODO less dangerous missiles with deligN=2 seem to be hogging turrets
 		// assining available turrets
-		tracks.values().stream().sorted((a, b) -> a.incptScore<b.incptScore? -1 : 1).forEach(track -> {
-			if (track.deligN == 0) return;
+		tracks.values().stream().filter(track -> track.deligN!=0).sorted((a, b) -> a.incptScore<b.incptScore? -1 : 1).forEach(track -> {
 			assign(track, track.availables, track.deligN, time, dt);
 		});
 		// aiming free turrets
 		if (occupied.size() < turrets.size()) {
-			tracks.values().stream().sorted((a, b) -> a.dta-(time-a.lastShot) < b.dta-(time-b.lastShot)? -1 : 1).forEach(track -> {
+			tracks.values().stream().filter(track -> track.deligN==0).sorted((a, b) -> {
+				boolean aShooting = a.lastShot-a.firstShot<CIWSLITrack.SHOOT_TIME;
+				boolean bShooting = b.lastShot-b.firstShot<CIWSLITrack.SHOOT_TIME;
+				if (aShooting && !bShooting) return -1;
+				if (bShooting && !aShooting) return 1;
+				if (aShooting && bShooting) return a.lastShot-a.firstShot>b.lastShot-b.firstShot? -1 : 1;
+				return a.dta-(time-a.lastShot) < b.dta-(time-b.lastShot)? -1 : 1;
+			}).forEach(track -> {
 				assign(track, track.availables, 1, time, dt);
 			});
 		}
 		// aiming unavailable turrets
 		if (occupied.size() < turrets.size()) {
-			turrets.forEach(t -> {
+			turrets.stream().filter(t -> t.auto).forEach(t -> {
 				if (!occupied.contains(t)) t.shoot(false);
 			});
 		}
@@ -72,9 +75,9 @@ public class CIWSLINetwork {
 			occupied.add(t);
 			t.angle(track.calcAngle(t), dt);
 			if (e.getValue() <= CIWSLITrack.RAD_ON_TARGET && track.dta <= t.life) {
-				track.lastShot = time;
-				if (track.firstShot == 0) track.firstShot = time;
+				if (track.firstShot == 0 || track.lastShot-track.firstShot>CIWSLITrack.SHOOT_TIME) track.firstShot = time;
 				t.shoot(true);
+				track.lastShot = time;
 			} else t.shoot(false);
 		}
 	}
