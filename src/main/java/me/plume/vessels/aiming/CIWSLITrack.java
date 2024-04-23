@@ -7,7 +7,7 @@ import me.plume.components.Vessel;
 import me.plume.modules.CIWSTurret;
 
 public class CIWSLITrack {
-	static final double MIN_DTI = 2;
+	static final double MIN_DTI = 1;
 	static final double SHOOT_TIME = 0.25;
 	static final double RAD_ON_TARGET = Math.toRadians(1);
 	double incptScore;

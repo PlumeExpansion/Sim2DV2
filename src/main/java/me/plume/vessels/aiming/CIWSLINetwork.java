@@ -44,30 +44,38 @@ public class CIWSLINetwork {
 		occupied.clear();
 		//TODO less dangerous missiles with deligN=2 seem to be hogging turrets
 		// assining available turrets
-		List<CIWSLITrack> orderedTracks = tracks.values().stream().sorted((a, b) -> a.incptScore<b.incptScore? -1 : 1).collect(Collectors.toList());
-		orderedTracks.forEach(track -> {
+		tracks.values().stream().sorted((a, b) -> a.incptScore<b.incptScore? -1 : 1).forEach(track -> {
 			if (track.deligN == 0) return;
-			List<Entry<CIWSTurret, Double>> remaining = track.availables.entrySet().stream()
-					.filter(e -> !occupied.contains(e.getKey()))
-					.sorted((a, b) -> a.getValue()<b.getValue()? -1 : 1)
-					.collect(Collectors.toList());
-			for(int i = 0; i < Math.min(remaining.size(), track.deligN); i++) {
-				Entry<CIWSTurret, Double> e = remaining.get(i);
-				CIWSTurret t = e.getKey();
-				occupied.add(t);
-				t.angle(track.calcAngle(t), dt);
-				if (e.getValue() <= CIWSLITrack.RAD_ON_TARGET && track.dta <= t.life) {
-					track.lastShot = time;
-					if (track.firstShot == 0) track.firstShot = time;
-					t.shoot(true);
-				} else t.shoot(false);
-			}
+			assign(track, track.availables, track.deligN, time, dt);
 		});
-		// aiming free/unavailable turrets
+		// aiming free turrets
 		if (occupied.size() < turrets.size()) {
-			turrets.stream().filter(t -> !occupied.contains(t) && t.auto).forEach(t -> {
-				t.shoot(false);
+			tracks.values().stream().sorted((a, b) -> a.dta-(time-a.lastShot) < b.dta-(time-b.lastShot)? -1 : 1).forEach(track -> {
+				assign(track, track.availables, 1, time, dt);
 			});
+		}
+		// aiming unavailable turrets
+		if (occupied.size() < turrets.size()) {
+			turrets.forEach(t -> {
+				if (!occupied.contains(t)) t.shoot(false);
+			});
+		}
+	}
+	private void assign(CIWSLITrack track, Map<CIWSTurret, Double> availables, int n, double time, double dt) {
+		List<Entry<CIWSTurret, Double>> remaining = availables.entrySet().stream()
+				.filter(e -> !occupied.contains(e.getKey()))
+				.sorted((a, b) -> a.getValue()<b.getValue()? -1 : 1)
+				.collect(Collectors.toList());
+		for(int i = 0; i < Math.min(remaining.size(), n); i++) {
+			Entry<CIWSTurret, Double> e = remaining.get(i);
+			CIWSTurret t = e.getKey();
+			occupied.add(t);
+			t.angle(track.calcAngle(t), dt);
+			if (e.getValue() <= CIWSLITrack.RAD_ON_TARGET && track.dta <= t.life) {
+				track.lastShot = time;
+				if (track.firstShot == 0) track.firstShot = time;
+				t.shoot(true);
+			} else t.shoot(false);
 		}
 	}
 }
